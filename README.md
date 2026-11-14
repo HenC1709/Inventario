@@ -1,51 +1,25 @@
-# TiendaBodegas — Sesión 2026-05-30
+# TiendaBodegas
 
-## ✅ Lo que se hizo hoy
+Aplicación .NET para registrar movimientos de inventario entre bodegas y consultar existencias por producto.
 
-### 🐛 Bug fixes
+## Estructura
 
-#### `TipoMovimiento.cs`
-- `traslado` → `Traslado` (PascalCase). Causaba error de compilación en `InventarioManager`.
+- `src/TiendaBodegas.Domain`: entidades, enumeraciones e interfaces de repositorio.
+- `src/TiendaBodegas.Application`: servicios de aplicación y DTOs.
+- `src/TiendaBodegas.Infrastructure`: persistencia JSON y adaptadores de infraestructura.
+- `src/TiendaBodegas.UI`: punto de entrada previsto para la interfaz de consola.
 
-#### `Ticket.cs`
-- `BodegDestinoId` → `BodegaDestinoId` (faltaba la `a`)
-- Parámetro `bodegaId` → `destinoId` en el constructor (nombre ambiguo)
+El código usa identificadores en inglés; la documentación del proyecto está en español.
 
-#### `InventarioManager.cs`
-- `RealizarTraslado`: se calculaba `stockOrigen` pero nunca se validaba contra `cantidad` — el traslado se ejecutaba aunque no hubiera stock suficiente
-- `ObtenerStockPorBodega`: los traslados siempre restaban del stock, sin importar si la bodega era origen o destino
-- `ObtenerStockPorTotalProducto`: `trasladosOrigen` y `trasladosDestino` siempre se cancelaban entre sí — se simplificó a `entradas - salidas`
-- Typo: `_tickerRepository` → `_ticketRepository`
+## Estado actual
 
----
+- `InventoryManager` define entradas, salidas, traslados y consultas de stock.
+- `JsonDataContext` guarda bodegas, productos y movimientos en archivos JSON bajo `data/` junto al ejecutable. Las claves JSON existentes se mantienen para compatibilidad con los datos guardados.
+- La persistencia SQL está pendiente; la ruta propuesta está en [docs/camino-a-sql.md](docs/camino-a-sql.md).
+- La implementación de `IStockMovementRepository`, el registro de dependencias y el punto de entrada de la UI siguen pendientes.
+- Los DTOs de movimientos y planificación y los componentes de despacho e impresión están sin implementar.
+- No hay un proyecto de pruebas automatizadas en la solución todavía.
 
-### 🏗️ Archivos construidos desde cero
+## Compilación
 
-#### `Bodega.cs` y `Producto.cs`
-- Agregados constructores con parámetros (las entidades no se podían instanciar)
-- Agregado constructor vacío para deserialización JSON
-- Pendiente: agregar `AsignarId(int id)` a ambas (y a `Ticket.cs`)
-
-#### `JsonDbContext.cs`
-- Manejo de archivos JSON como capa de persistencia
-- `GuardarJson()`: serializa las 3 listas a `data/bodegas.json`, `productos.json`, `tickets.json`
-- `ObtenerJson()`: deserializa con `File.Exists()` para no explotar en el primer arranque
-- La carpeta `data/` se crea automáticamente en runtime junto al ejecutable
-
-#### `BodegaRepository.cs`
-- Implementa `IBodegaRepository` + `IRepository<Bodega>`
-- Métodos: `GetAll`, `GetById`, `GetByName`, `GetByAddress`, `Add`, `Update`
-- `Add` genera IDs con `Max + 1` y los asigna vía `AsignarId()`
-- `Update` usa patrón Remove + Add sobre la lista en memoria
-- Persiste automáticamente con `GuardarJson()` después de cada escritura
-
----
-
-## ⏳ Pendiente para la próxima sesión
-
-- [ ] Agregar `AsignarId(int id)` a `Bodega.cs`, `Producto.cs` y `Ticket.cs`
-- [ ] `TicketRepository.cs`
-- [ ] `DespachoManager.cs`
-- [ ] `MovimientoStockRequest.cs` y `PlanificacionEnvioDto.cs`
-- [ ] `DependencyInjection.cs`
-- [ ] `Program.cs` (menú de consola)
+La solución está definida en `TiendaBodegas.slnx` y los proyectos apuntan a `net10.0`. La compilación no se ha verificado en esta revisión.
