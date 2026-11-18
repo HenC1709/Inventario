@@ -21,4 +21,9 @@ public interface IProductRepository : IRepository<Product>
     /// Updates an existing product's persisted data.
     /// </summary>
     void Update(Product product);
+
+    /// <summary>
+    /// Deletes the product with the specified identifier from persistence.
+    /// </summary>
+    void Delete(int id);
 }

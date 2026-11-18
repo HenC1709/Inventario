@@ -5,19 +5,97 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style x:Key="StatusBannerStyle" TargetType="Border">
+            <Setter Property="Background" Value="#DCFCE7" />
+            <Setter Property="BorderBrush" Value="#86EFAC" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding StatusMessage}" Value="">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsErrorMessage}" Value="True">
+                    <Setter Property="Background" Value="#FEE2E2" />
+                    <Setter Property="BorderBrush" Value="#FCA5A5" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="StatusBannerTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#166534" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsErrorMessage}" Value="True">
+                    <Setter Property="Foreground" Value="#991B1B" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Listado de bodegas registradas"
-                   FontSize="13"
-                   Foreground="#5A6577"
-                   Margin="0,0,0,12" />
+        <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Buscar:"
+                           VerticalAlignment="Center"
+                           Foreground="#334155"
+                           FontSize="13"
+                           Margin="0,0,8,0" />
+                <TextBox Width="260"
+                         Padding="8,6"
+                         FontSize="13"
+                         BorderBrush="#CBD5E1"
+                         BorderThickness="1"
+                         ToolTip="Filtrar por nombre o dirección"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
 
-        <DataGrid Grid.Row="1"
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="+ Nueva"
+                        Command="{Binding CreateWarehouseCommand}"
+                        Padding="14,7"
+                        Margin="0,0,8,0"
+                        Background="#2563EB"
+                        Foreground="#FFFFFF"
+                        BorderThickness="0"
+                        FontWeight="SemiBold"
+                        Cursor="Hand" />
+                <Button Content="Editar"
+                        Command="{Binding EditWarehouseCommand}"
+                        Padding="14,7"
+                        Margin="0,0,8,0"
+                        Background="#F1F5F9"
+                        Foreground="#1E293B"
+                        BorderBrush="#CBD5E1"
+                        BorderThickness="1"
+                        Cursor="Hand" />
+                <Button Content="Eliminar"
+                        Command="{Binding DeleteWarehouseCommand}"
+                        Padding="14,7"
+                        Background="#FEF2F2"
+                        Foreground="#B91C1C"
+                        BorderBrush="#FECACA"
+                        BorderThickness="1"
+                        Cursor="Hand" />
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource StatusBannerStyle}">
+            <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusBannerTextStyle}" />
+        </Border>
+
+        <DataGrid Grid.Row="2"
                   ItemsSource="{Binding Warehouses}"
+                  SelectedItem="{Binding SelectedWarehouse, Mode=TwoWay}"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   CanUserAddRows="False"

@@ -20,4 +20,9 @@ public interface IWarehouseRepository : IRepository<Warehouse>
     /// Updates an existing warehouse's persisted data.
     /// </summary>
     void Update(Warehouse warehouse);
+
+    /// <summary>
+    /// Deletes the warehouse with the specified identifier from persistence.
+    /// </summary>
+    void Delete(int id);
 }

@@ -40,4 +40,14 @@ public class Product
 
         if (Id == 0) Id = id;
     }
+
+    /// <summary>
+    /// Updates the editable product fields while preserving its identity.
+    /// </summary>
+    public void Update(string name, string sku, decimal price)
+    {
+        Name = name.Trim();
+        SKU = sku.Trim();
+        Price = price;
+    }
 }

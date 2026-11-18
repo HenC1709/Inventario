@@ -37,4 +37,13 @@ public class Warehouse
 
         if (Id == 0) Id = id;
     }
+
+    /// <summary>
+    /// Updates the editable warehouse fields while preserving its identity.
+    /// </summary>
+    public void Update(string name, string address)
+    {
+        Name = name.Trim();
+        Address = address.Trim();
+    }
 }
