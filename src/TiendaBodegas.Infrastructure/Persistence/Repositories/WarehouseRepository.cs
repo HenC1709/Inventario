@@ -45,15 +45,14 @@ namespace TiendaBodegas.Infrastructure.Persistence.Repositories
         }
 
         /// <summary>
-        /// Replaces an existing warehouse with the updated instance and saves changes to JSON.
+        /// Replaces an existing warehouse in place and saves changes to JSON.
         /// </summary>
         public void Update(Warehouse warehouse)
         {
-            var existingWarehouse = _context.Warehouses.FirstOrDefault(item => item.Id == warehouse.Id);
-            if (existingWarehouse != null)
+            var index = _context.Warehouses.FindIndex(item => item.Id == warehouse.Id);
+            if (index >= 0)
             {
-                _context.Warehouses.Remove(existingWarehouse);
-                _context.Warehouses.Add(warehouse);
+                _context.Warehouses[index] = warehouse;
                 _context.SaveJson();
             }
         }
@@ -76,6 +75,19 @@ namespace TiendaBodegas.Infrastructure.Persistence.Repositories
         public Warehouse? GetById(int id)
         {
             return _context.Warehouses.FirstOrDefault(warehouse => warehouse.Id == id);
+        }
+
+        /// <summary>
+        /// Removes the warehouse with the specified identifier and persists changes to JSON.
+        /// </summary>
+        public void Delete(int id)
+        {
+            var existingWarehouse = _context.Warehouses.FirstOrDefault(item => item.Id == id);
+            if (existingWarehouse != null)
+            {
+                _context.Warehouses.Remove(existingWarehouse);
+                _context.SaveJson();
+            }
         }
     }
 }

@@ -36,11 +36,12 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Finds a product by its SKU code.
+    /// Finds a product by its SKU code (case-insensitive).
     /// </summary>
     public Product? GetBySku(string sku)
     {
-        return _context.Products.FirstOrDefault(product => product.SKU == sku);
+        return _context.Products.FirstOrDefault(product =>
+            string.Equals(product.SKU, sku, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -73,6 +74,19 @@ public class ProductRepository : IProductRepository
         if (index >= 0)
         {
             _context.Products[index] = product;
+            _context.SaveJson();
+        }
+    }
+
+    /// <summary>
+    /// Removes the product with the specified identifier and persists changes to JSON.
+    /// </summary>
+    public void Delete(int id)
+    {
+        var existingProduct = _context.Products.FirstOrDefault(item => item.Id == id);
+        if (existingProduct != null)
+        {
+            _context.Products.Remove(existingProduct);
             _context.SaveJson();
         }
     }
