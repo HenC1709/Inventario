@@ -6,32 +6,50 @@ using TiendaBodegas.Domain.Entities;
 
 namespace TiendaBodegas.Infrastructure.Persistence.Json
 {
+    /// <summary>
+    /// JSON-backed data context managing in-memory collections and atomic persistence under the data directory.
+    /// </summary>
     public class JsonDataContext
     {
+        private readonly string _dataDirectory;
+
         public List<Warehouse> Warehouses { get; private set; } = new();
         public List<Product> Products { get; private set; } = new();
         public List<StockMovement> StockMovements { get; private set; } = new();
 
+        /// <summary>
+        /// Initializes a new JSON data context targeting the given directory, or the default application data folder.
+        /// </summary>
+        public JsonDataContext(string? dataDirectory = null)
+        {
+            _dataDirectory = dataDirectory ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
+        }
+
+        /// <summary>
+        /// Persists warehouses, products, and stock movements to JSON files using atomic file replacement.
+        /// </summary>
         public void SaveJson()
         {
-            var dataDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
-            Directory.CreateDirectory(dataDirectory);
+            Directory.CreateDirectory(_dataDirectory);
 
             var options = new JsonSerializerOptions { WriteIndented = true };
 
-            File.WriteAllText(Path.Combine(dataDirectory, "bodegas.json"), JsonSerializer.Serialize(Warehouses, options));
-            File.WriteAllText(Path.Combine(dataDirectory, "productos.json"), JsonSerializer.Serialize(Products, options));
-            File.WriteAllText(Path.Combine(dataDirectory, "tickets.json"), JsonSerializer.Serialize(StockMovements, options));
+            WriteFileAtomically(Path.Combine(_dataDirectory, "bodegas.json"), JsonSerializer.Serialize(Warehouses, options));
+            WriteFileAtomically(Path.Combine(_dataDirectory, "productos.json"), JsonSerializer.Serialize(Products, options));
+            WriteFileAtomically(Path.Combine(_dataDirectory, "tickets.json"), JsonSerializer.Serialize(StockMovements, options));
         }
 
+        /// <summary>
+        /// Loads warehouses, products, and stock movements from the JSON files in the configured data directory.
+        /// </summary>
         public void LoadJson()
         {
-            var dataDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
-            Directory.CreateDirectory(dataDirectory);
+            Directory.CreateDirectory(_dataDirectory);
 
-            var warehousesPath = Path.Combine(dataDirectory, "bodegas.json");
-            var productsPath = Path.Combine(dataDirectory, "productos.json");
-            var movementsPath = Path.Combine(dataDirectory, "tickets.json");
+            var warehousesPath = Path.Combine(_dataDirectory, "bodegas.json");
+            var productsPath = Path.Combine(_dataDirectory, "productos.json");
+            var movementsPath = Path.Combine(_dataDirectory, "tickets.json");
+
             if (File.Exists(warehousesPath))
             {
                 var json = File.ReadAllText(warehousesPath);
@@ -47,6 +65,16 @@ namespace TiendaBodegas.Infrastructure.Persistence.Json
                 var json = File.ReadAllText(movementsPath);
                 StockMovements = JsonSerializer.Deserialize<List<StockMovement>>(json) ?? new();
             }
+        }
+
+        /// <summary>
+        /// Writes content to a temporary file and atomically replaces the target file to avoid partial writes on failure.
+        /// </summary>
+        private static void WriteFileAtomically(string filePath, string content)
+        {
+            var tempPath = filePath + ".tmp";
+            File.WriteAllText(tempPath, content);
+            File.Move(tempPath, filePath, overwrite: true);
         }
     }
 }
