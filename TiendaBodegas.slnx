@@ -5,4 +5,7 @@
     <Project Path="src/TiendaBodegas.Infrastructure/TiendaBodegas.Infrastructure.csproj" />
     <Project Path="src/TiendaBodegas.UI/TiendaBodegas.UI.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TiendaBodegas.Tests/TiendaBodegas.Tests.csproj" />
+  </Folder>
 </Solution>
