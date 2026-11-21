@@ -24,6 +24,9 @@ public partial class ProductFormViewModel : ValidatableViewModel
     private string _priceText = string.Empty;
 
     [ObservableProperty]
+    private string _minStockText = "0";
+
+    [ObservableProperty]
     private string _nameError = string.Empty;
 
     [ObservableProperty]
@@ -31,6 +34,9 @@ public partial class ProductFormViewModel : ValidatableViewModel
 
     [ObservableProperty]
     private string _priceError = string.Empty;
+
+    [ObservableProperty]
+    private string _minStockError = string.Empty;
 
     [ObservableProperty]
     private string _formError = string.Empty;
@@ -59,6 +65,7 @@ public partial class ProductFormViewModel : ValidatableViewModel
             _name = productToEdit.Name;
             _sku = productToEdit.SKU;
             _priceText = productToEdit.Price.ToString("0.##", CultureInfo.InvariantCulture);
+            _minStockText = productToEdit.MinStock.ToString(CultureInfo.InvariantCulture);
         }
         else
         {
@@ -82,6 +89,11 @@ public partial class ProductFormViewModel : ValidatableViewModel
     partial void OnPriceTextChanged(string value) => ValidatePrice();
 
     /// <summary>
+    /// Revalidates the minimum stock text whenever it changes.
+    /// </summary>
+    partial void OnMinStockTextChanged(string value) => ValidateMinStock();
+
+    /// <summary>
     /// Validates all fields and persists the product when valid, keeping the dialog open on validation or domain errors.
     /// </summary>
     [RelayCommand]
@@ -90,18 +102,20 @@ public partial class ProductFormViewModel : ValidatableViewModel
         FormError = string.Empty;
         ValidateAll();
 
-        if (HasErrors || !TryParsePositivePrice(PriceText, out var price))
+        if (HasErrors
+            || !TryParsePositivePrice(PriceText, out var price)
+            || !TryParseNonNegativeInt(MinStockText, out var minStock))
             return;
 
         try
         {
             if (_editingProductId.HasValue)
             {
-                _catalogService.UpdateProduct(_editingProductId.Value, Name, Sku, price);
+                _catalogService.UpdateProduct(_editingProductId.Value, Name, Sku, price, minStock);
             }
             else
             {
-                _catalogService.CreateProduct(Name, Sku, price);
+                _catalogService.CreateProduct(Name, Sku, price, minStock);
             }
 
             RequestClose?.Invoke(true);
@@ -129,6 +143,7 @@ public partial class ProductFormViewModel : ValidatableViewModel
         ValidateName();
         ValidateSku();
         ValidatePrice();
+        ValidateMinStock();
     }
 
     /// <summary>
@@ -181,6 +196,19 @@ public partial class ProductFormViewModel : ValidatableViewModel
     }
 
     /// <summary>
+    /// Validates that the minimum stock parses as a non-negative integer.
+    /// </summary>
+    private void ValidateMinStock()
+    {
+        var error = TryParseNonNegativeInt(MinStockText, out _)
+            ? string.Empty
+            : "Ingrese un stock mínimo entero mayor o igual a 0.";
+
+        MinStockError = error;
+        SetPropertyError(nameof(MinStockText), error);
+    }
+
+    /// <summary>
     /// Parses a decimal price supporting dot or comma decimal separators and checks that it is strictly positive.
     /// </summary>
     private static bool TryParsePositivePrice(string? text, out decimal price)
@@ -198,5 +226,18 @@ public partial class ProductFormViewModel : ValidatableViewModel
 
         return decimal.TryParse(trimmed, NumberStyles.Number, CultureInfo.InvariantCulture, out price)
             && price > 0m;
+    }
+
+    /// <summary>
+    /// Parses a non-negative integer value from form input text.
+    /// </summary>
+    private static bool TryParseNonNegativeInt(string? text, out int value)
+    {
+        value = 0;
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        return int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out value)
+            && value >= 0;
     }
 }

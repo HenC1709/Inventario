@@ -47,22 +47,25 @@ public class Mvp2CrudViewModelsTests : IDisposable
         form.Name = "";
         form.Sku = "sku-exist";
         form.PriceText = "0";
+        form.MinStockText = "-5";
         form.SaveCommand.Execute(null);
 
         Assert.True(form.HasErrors);
         Assert.NotEmpty(form.GetErrors(nameof(ProductFormViewModel.Name)).Cast<string>());
         Assert.NotEmpty(form.GetErrors(nameof(ProductFormViewModel.Sku)).Cast<string>());
         Assert.NotEmpty(form.GetErrors(nameof(ProductFormViewModel.PriceText)).Cast<string>());
+        Assert.NotEmpty(form.GetErrors(nameof(ProductFormViewModel.MinStockText)).Cast<string>());
         Assert.Null(closeResult);
 
         form.Name = "Nuevo Producto";
         form.Sku = "SKU-NEW";
         form.PriceText = "15.50";
+        form.MinStockText = "12";
         form.SaveCommand.Execute(null);
 
         Assert.False(form.HasErrors);
         Assert.True(closeResult);
-        Assert.Contains(_catalogManager.GetAllProducts(), p => p.SKU == "SKU-NEW" && p.Price == 15.50m);
+        Assert.Contains(_catalogManager.GetAllProducts(), p => p.SKU == "SKU-NEW" && p.Price == 15.50m && p.MinStock == 12);
     }
 
     /// <summary>
@@ -176,6 +179,11 @@ public class Mvp2CrudViewModelsTests : IDisposable
         /// Returns false without displaying a modal window.
         /// </summary>
         public bool ShowWarehouseForm(WarehouseFormViewModel viewModel) => false;
+
+        /// <summary>
+        /// Returns false without displaying a modal window.
+        /// </summary>
+        public bool ShowMovementForm(MovementFormViewModel viewModel) => false;
 
         /// <summary>
         /// Returns <see cref="ConfirmResult"/> without displaying a message box.

@@ -34,11 +34,11 @@ public class CatalogManager : ICatalogService
     /// <summary>
     /// Validates product inputs, checks SKU uniqueness, and creates a new product.
     /// </summary>
-    public Product CreateProduct(string name, string sku, decimal price)
+    public Product CreateProduct(string name, string sku, decimal price, int minStock = 0)
     {
-        ValidateProductInputs(name, sku, price, excludeProductId: null);
+        ValidateProductInputs(name, sku, price, minStock, excludeProductId: null);
 
-        var product = new Product(name.Trim(), sku.Trim(), price);
+        var product = new Product(name.Trim(), sku.Trim(), price, minStock);
         _productRepository.Add(product);
         return product;
     }
@@ -46,14 +46,14 @@ public class CatalogManager : ICatalogService
     /// <summary>
     /// Validates product inputs, checks SKU uniqueness, and updates the matching product.
     /// </summary>
-    public void UpdateProduct(int id, string name, string sku, decimal price)
+    public void UpdateProduct(int id, string name, string sku, decimal price, int minStock = 0)
     {
         var existing = _productRepository.GetById(id)
             ?? throw new ArgumentException("El producto especificado no existe.", nameof(id));
 
-        ValidateProductInputs(name, sku, price, excludeProductId: id);
+        ValidateProductInputs(name, sku, price, minStock, excludeProductId: id);
 
-        existing.Update(name, sku, price);
+        existing.Update(name, sku, price, minStock);
         _productRepository.Update(existing);
     }
 
@@ -129,9 +129,9 @@ public class CatalogManager : ICatalogService
     }
 
     /// <summary>
-    /// Validates required fields, positive price, and SKU uniqueness for product creation or update.
+    /// Validates required fields, positive price, non-negative minimum stock, and SKU uniqueness for product creation or update.
     /// </summary>
-    private void ValidateProductInputs(string name, string sku, decimal price, int? excludeProductId)
+    private void ValidateProductInputs(string name, string sku, decimal price, int minStock, int? excludeProductId)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre del producto es obligatorio.", nameof(name));
@@ -141,6 +141,9 @@ public class CatalogManager : ICatalogService
 
         if (price <= 0)
             throw new ArgumentOutOfRangeException(nameof(price), "El precio debe ser mayor a cero.");
+
+        if (minStock < 0)
+            throw new ArgumentOutOfRangeException(nameof(minStock), "El stock mínimo no puede ser negativo.");
 
         if (!IsSkuAvailable(sku, excludeProductId))
             throw new InvalidOperationException("Ya existe un producto con el mismo SKU.");

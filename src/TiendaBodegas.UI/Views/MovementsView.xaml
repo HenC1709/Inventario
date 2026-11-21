@@ -5,18 +5,153 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style x:Key="StatusBannerStyle" TargetType="Border">
+            <Setter Property="Background" Value="#DCFCE7" />
+            <Setter Property="BorderBrush" Value="#86EFAC" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding StatusMessage}" Value="">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsErrorMessage}" Value="True">
+                    <Setter Property="Background" Value="#FEE2E2" />
+                    <Setter Property="BorderBrush" Value="#FCA5A5" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="StatusBannerTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#166534" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsErrorMessage}" Value="True">
+                    <Setter Property="Foreground" Value="#991B1B" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Historial de movimientos de inventario (solo lectura)"
-                   FontSize="13"
-                   Foreground="#5A6577"
-                   Margin="0,0,0,12" />
+        <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
+            <TextBlock DockPanel.Dock="Left"
+                       Text="Historial y registro de movimientos de inventario"
+                       VerticalAlignment="Center"
+                       FontSize="13"
+                       Foreground="#5A6577" />
 
-        <DataGrid Grid.Row="1"
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="+ Entrada"
+                        Command="{Binding RegisterEntryCommand}"
+                        Padding="14,7"
+                        Margin="0,0,8,0"
+                        Background="#2563EB"
+                        Foreground="#FFFFFF"
+                        BorderThickness="0"
+                        FontWeight="SemiBold"
+                        Cursor="Hand" />
+                <Button Content="- Salida"
+                        Command="{Binding RegisterExitCommand}"
+                        Padding="14,7"
+                        Margin="0,0,8,0"
+                        Background="#F1F5F9"
+                        Foreground="#1E293B"
+                        BorderBrush="#CBD5E1"
+                        BorderThickness="1"
+                        Cursor="Hand" />
+                <Button Content="⇄ Traslado"
+                        Command="{Binding RegisterTransferCommand}"
+                        Padding="14,7"
+                        Background="#F1F5F9"
+                        Foreground="#1E293B"
+                        BorderBrush="#CBD5E1"
+                        BorderThickness="1"
+                        Cursor="Hand" />
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1"
+                Background="#F8FAFC"
+                BorderBrush="#E2E8F0"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,10"
+                Margin="0,0,0,12">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,14,2">
+                    <TextBlock Text="Desde:"
+                               VerticalAlignment="Center"
+                               Foreground="#334155"
+                               FontSize="13"
+                               Margin="0,0,6,0" />
+                    <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}" Width="125" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,14,2">
+                    <TextBlock Text="Hasta:"
+                               VerticalAlignment="Center"
+                               Foreground="#334155"
+                               FontSize="13"
+                               Margin="0,0,6,0" />
+                    <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}" Width="125" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,14,2">
+                    <TextBlock Text="Tipo:"
+                               VerticalAlignment="Center"
+                               Foreground="#334155"
+                               FontSize="13"
+                               Margin="0,0,6,0" />
+                    <ComboBox Width="115"
+                              Padding="8,5"
+                              FontSize="13"
+                              ItemsSource="{Binding MovementTypeFilters}"
+                              SelectedItem="{Binding SelectedMovementTypeFilter, Mode=TwoWay}"
+                              DisplayMemberPath="Label" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,14,2">
+                    <TextBlock Text="Bodega:"
+                               VerticalAlignment="Center"
+                               Foreground="#334155"
+                               FontSize="13"
+                               Margin="0,0,6,0" />
+                    <ComboBox Width="165"
+                              Padding="8,5"
+                              FontSize="13"
+                              ItemsSource="{Binding WarehouseFilters}"
+                              SelectedItem="{Binding SelectedWarehouseFilter, Mode=TwoWay}"
+                              DisplayMemberPath="Label" />
+                </StackPanel>
+
+                <Button Content="Limpiar"
+                        Command="{Binding ClearFiltersCommand}"
+                        Padding="12,6"
+                        Margin="0,2,0,2"
+                        Background="#FFFFFF"
+                        Foreground="#334155"
+                        BorderBrush="#CBD5E1"
+                        BorderThickness="1"
+                        Cursor="Hand" />
+            </WrapPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource StatusBannerStyle}">
+            <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusBannerTextStyle}" />
+        </Border>
+
+        <DataGrid Grid.Row="3"
                   ItemsSource="{Binding Movements}"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
@@ -30,13 +165,13 @@
                   BorderBrush="#D5DCE6"
                   BorderThickness="1">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60" />
-                <DataGridTextColumn Header="Fecha" Binding="{Binding Date, StringFormat=dd/MM/yyyy HH:mm}" Width="140" />
-                <DataGridTextColumn Header="Tipo" Binding="{Binding MovementType}" Width="95" />
-                <DataGridTextColumn Header="Producto ID" Binding="{Binding ProductId}" Width="95" />
-                <DataGridTextColumn Header="Cantidad" Binding="{Binding Quantity}" Width="85" />
-                <DataGridTextColumn Header="Bodega Origen" Binding="{Binding SourceWarehouseId}" Width="110" />
-                <DataGridTextColumn Header="Bodega Destino" Binding="{Binding DestinationWarehouseId}" Width="115" />
+                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="55" />
+                <DataGridTextColumn Header="Fecha" Binding="{Binding Date, StringFormat=dd/MM/yyyy HH:mm}" Width="135" />
+                <DataGridTextColumn Header="Tipo" Binding="{Binding MovementTypeLabel}" Width="85" />
+                <DataGridTextColumn Header="Producto" Binding="{Binding ProductDisplay}" Width="190" />
+                <DataGridTextColumn Header="Cantidad" Binding="{Binding Quantity}" Width="80" />
+                <DataGridTextColumn Header="Bodega Origen" Binding="{Binding SourceWarehouseDisplay}" Width="165" />
+                <DataGridTextColumn Header="Bodega Destino" Binding="{Binding DestinationWarehouseDisplay}" Width="165" />
                 <DataGridTextColumn Header="Observaciones" Binding="{Binding Notes}" Width="*" />
             </DataGrid.Columns>
         </DataGrid>

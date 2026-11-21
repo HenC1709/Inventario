@@ -36,7 +36,7 @@ public class JsonDataContextTests : IDisposable
         var warehouse = new Warehouse("Bodega Central", "Av. Principal 100");
         warehouseRepo.Add(warehouse);
 
-        var product = new Product("Arroz 1kg", "ARR-001", 12.50m);
+        var product = new Product("Arroz 1kg", "ARR-001", 12.50m, minStock: 10);
         productRepo.Add(product);
 
         var movement = new StockMovement(
@@ -61,6 +61,7 @@ public class JsonDataContextTests : IDisposable
         Assert.Equal("Arroz 1kg", loadedProduct.Name);
         Assert.Equal("ARR-001", loadedProduct.SKU);
         Assert.Equal(12.50m, loadedProduct.Price);
+        Assert.Equal(10, loadedProduct.MinStock);
 
         var loadedMovement = Assert.Single(readContext.StockMovements);
         Assert.Equal(movement.Id, loadedMovement.Id);
@@ -86,6 +87,33 @@ public class JsonDataContextTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_tempDirectory, "productos.json")));
         Assert.True(File.Exists(Path.Combine(_tempDirectory, "tickets.json")));
         Assert.Empty(Directory.GetFiles(_tempDirectory, "*.tmp"));
+    }
+
+    /// <summary>
+    /// Verifies that legacy product JSON records lacking StockMinimo deserialize cleanly with MinStock set to zero.
+    /// </summary>
+    [Fact]
+    public void LoadJson_WhenLegacyProductsLackMinStock_DefaultsToZero()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        var legacyProductsJson = """
+        [
+          {
+            "Id": 1,
+            "Nombre": "Producto Legado",
+            "SKU": "LEG-001",
+            "Precio": 9.95
+          }
+        ]
+        """;
+        File.WriteAllText(Path.Combine(_tempDirectory, "productos.json"), legacyProductsJson);
+
+        var context = new JsonDataContext(_tempDirectory);
+        context.LoadJson();
+
+        var loadedProduct = Assert.Single(context.Products);
+        Assert.Equal("Producto Legado", loadedProduct.Name);
+        Assert.Equal(0, loadedProduct.MinStock);
     }
 
     /// <summary>

@@ -38,10 +38,10 @@ public class CatalogManagerTests : IDisposable
     [Fact]
     public void CreateUpdateAndDelete_WhenEntitiesHaveNoMovements_PersistsChanges()
     {
-        var product = _catalogManager.CreateProduct("  Café Molido  ", " CAF-001 ", 4.50m);
+        var product = _catalogManager.CreateProduct("  Café Molido  ", " CAF-001 ", 4.50m, minStock: 8);
         var warehouse = _catalogManager.CreateWarehouse("  Bodega Este  ", " Av. Sol 10 ");
 
-        _catalogManager.UpdateProduct(product.Id, "Café Premium", "CAF-001", 5.25m);
+        _catalogManager.UpdateProduct(product.Id, "Café Premium", "CAF-001", 5.25m, minStock: 15);
         _catalogManager.UpdateWarehouse(warehouse.Id, "Bodega Este Renovada", "Av. Sol 25");
 
         var reloadedContext = new JsonDataContext(_tempDirectory);
@@ -51,6 +51,7 @@ public class CatalogManagerTests : IDisposable
         Assert.Equal("Café Premium", savedProduct.Name);
         Assert.Equal("CAF-001", savedProduct.SKU);
         Assert.Equal(5.25m, savedProduct.Price);
+        Assert.Equal(15, savedProduct.MinStock);
 
         var savedWarehouse = Assert.Single(reloadedContext.Warehouses);
         Assert.Equal("Bodega Este Renovada", savedWarehouse.Name);
@@ -92,6 +93,11 @@ public class CatalogManagerTests : IDisposable
         Assert.Throws<ArgumentException>(() => _catalogManager.CreateProduct("Producto", " ", 10m));
         Assert.Throws<ArgumentOutOfRangeException>(() => _catalogManager.CreateProduct("Producto", "SKU-1", 0m));
         Assert.Throws<ArgumentOutOfRangeException>(() => _catalogManager.CreateProduct("Producto", "SKU-1", -3m));
+        Assert.Throws<ArgumentOutOfRangeException>(() => _catalogManager.CreateProduct("Producto", "SKU-1", 5m, minStock: -1));
+
+        var validProduct = _catalogManager.CreateProduct("Producto", "SKU-1", 5m, minStock: 2);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            _catalogManager.UpdateProduct(validProduct.Id, "Producto", "SKU-1", 5m, minStock: -4));
 
         Assert.Throws<ArgumentException>(() => _catalogManager.CreateWarehouse("", "Dirección"));
         Assert.Throws<ArgumentException>(() => _catalogManager.CreateWarehouse("Bodega", " "));

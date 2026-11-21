@@ -14,6 +14,9 @@ public class Product
     [JsonInclude]
     [JsonPropertyName("Precio")]
     public decimal Price { get; private set; }
+    [JsonInclude]
+    [JsonPropertyName("StockMinimo")]
+    public int MinStock { get; private set; }
 
     /// <summary>
     /// Parameterless constructor required for JSON deserialization.
@@ -21,13 +24,14 @@ public class Product
     public Product() { }
 
     /// <summary>
-    /// Initializes a new product with its name, SKU, and unit price.
+    /// Initializes a new product with its name, SKU, unit price, and optional minimum stock threshold.
     /// </summary>
-    public Product(string name, string sku, decimal price)
+    public Product(string name, string sku, decimal price, int minStock = 0)
     {
         Name = name;
         SKU = sku;
         Price = price;
+        MinStock = minStock;
     }
 
     /// <summary>
@@ -44,10 +48,11 @@ public class Product
     /// <summary>
     /// Updates the editable product fields while preserving its identity.
     /// </summary>
-    public void Update(string name, string sku, decimal price)
+    public void Update(string name, string sku, decimal price, int minStock = 0)
     {
         Name = name.Trim();
         SKU = sku.Trim();
         Price = price;
+        MinStock = minStock;
     }
 }
