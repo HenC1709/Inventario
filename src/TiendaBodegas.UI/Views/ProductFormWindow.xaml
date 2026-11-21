@@ -57,6 +57,11 @@
                  Style="{StaticResource FormInputStyle}" />
         <TextBlock Text="{Binding PriceError}" Style="{StaticResource ErrorTextStyle}" />
 
+        <TextBlock Text="Stock mínimo *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,12,0,4" />
+        <TextBox Text="{Binding MinStockText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                 Style="{StaticResource FormInputStyle}" />
+        <TextBlock Text="{Binding MinStockError}" Style="{StaticResource ErrorTextStyle}" />
+
         <TextBlock Text="{Binding FormError}"
                    Margin="0,12,0,0"
                    Style="{StaticResource ErrorTextStyle}" />

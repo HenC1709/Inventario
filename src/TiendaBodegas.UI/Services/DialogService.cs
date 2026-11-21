@@ -36,6 +36,19 @@ public class DialogService : IDialogService
     }
 
     /// <summary>
+    /// Opens <see cref="MovementFormWindow"/> modally over the main window.
+    /// </summary>
+    public bool ShowMovementForm(MovementFormViewModel viewModel)
+    {
+        var window = new MovementFormWindow(viewModel)
+        {
+            Owner = System.Windows.Application.Current?.MainWindow
+        };
+
+        return window.ShowDialog() == true;
+    }
+
+    /// <summary>
     /// Displays a Yes/No confirmation message box and returns true when the user selects Yes.
     /// </summary>
     public bool Confirm(string message, string title)

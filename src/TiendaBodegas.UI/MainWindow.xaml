@@ -17,6 +17,9 @@
         <DataTemplate DataType="{x:Type vm:ProductsViewModel}">
             <views:ProductsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StockViewModel}">
+            <views:StockView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:MovementsViewModel}">
             <views:MovementsView />
         </DataTemplate>
@@ -77,6 +80,9 @@
                             Style="{StaticResource SidebarButtonStyle}" />
                     <Button Content="Productos"
                             Command="{Binding ShowProductsCommand}"
+                            Style="{StaticResource SidebarButtonStyle}" />
+                    <Button Content="Stock por Bodega"
+                            Command="{Binding ShowStockCommand}"
                             Style="{StaticResource SidebarButtonStyle}" />
                     <Button Content="Movimientos"
                             Command="{Binding ShowMovementsCommand}"

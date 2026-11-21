@@ -112,6 +112,7 @@
                 <DataGridTextColumn Header="SKU" Binding="{Binding SKU}" Width="140" />
                 <DataGridTextColumn Header="Nombre" Binding="{Binding Name}" Width="*" />
                 <DataGridTextColumn Header="Precio" Binding="{Binding Price, StringFormat=C2}" Width="130" />
+                <DataGridTextColumn Header="Stock Mín." Binding="{Binding MinStock}" Width="100" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

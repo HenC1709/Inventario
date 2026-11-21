@@ -10,6 +10,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly WarehousesViewModel _warehousesViewModel;
     private readonly ProductsViewModel _productsViewModel;
+    private readonly StockViewModel _stockViewModel;
     private readonly MovementsViewModel _movementsViewModel;
 
     [ObservableProperty]
@@ -24,10 +25,12 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(
         WarehousesViewModel warehousesViewModel,
         ProductsViewModel productsViewModel,
+        StockViewModel stockViewModel,
         MovementsViewModel movementsViewModel)
     {
         _warehousesViewModel = warehousesViewModel;
         _productsViewModel = productsViewModel;
+        _stockViewModel = stockViewModel;
         _movementsViewModel = movementsViewModel;
         _currentViewModel = _warehousesViewModel;
     }
@@ -52,6 +55,17 @@ public partial class MainViewModel : ObservableObject
         _productsViewModel.LoadData();
         CurrentViewModel = _productsViewModel;
         CurrentSectionTitle = "Productos";
+    }
+
+    /// <summary>
+    /// Navigates to the Stock by Warehouse section and refreshes stock balances and alerts.
+    /// </summary>
+    [RelayCommand]
+    public void ShowStock()
+    {
+        _stockViewModel.LoadData();
+        CurrentViewModel = _stockViewModel;
+        CurrentSectionTitle = "Stock por Bodega";
     }
 
     /// <summary>

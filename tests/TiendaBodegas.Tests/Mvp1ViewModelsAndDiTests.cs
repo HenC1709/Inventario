@@ -70,6 +70,12 @@ public class Mvp1ViewModelsAndDiTests : IDisposable
         Assert.Equal("Productos", mainViewModel.CurrentSectionTitle);
         Assert.Equal(4, productsVm.Products.Count);
 
+        mainViewModel.ShowStockCommand.Execute(null);
+        var stockVm = Assert.IsType<StockViewModel>(mainViewModel.CurrentViewModel);
+        Assert.Equal("Stock por Bodega", mainViewModel.CurrentSectionTitle);
+        Assert.NotEmpty(stockVm.StockItems);
+        Assert.Equal(4, stockVm.ProductTotals.Count);
+
         mainViewModel.ShowMovementsCommand.Execute(null);
         var movementsVm = Assert.IsType<MovementsViewModel>(mainViewModel.CurrentViewModel);
         Assert.Equal("Movimientos", mainViewModel.CurrentSectionTitle);

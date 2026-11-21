@@ -18,6 +18,11 @@ public interface IDialogService
     bool ShowWarehouseForm(WarehouseFormViewModel viewModel);
 
     /// <summary>
+    /// Opens the modal movement registration form and returns whether the user registered a movement.
+    /// </summary>
+    bool ShowMovementForm(MovementFormViewModel viewModel);
+
+    /// <summary>
     /// Displays a confirmation prompt and returns whether the user accepted.
     /// </summary>
     bool Confirm(string message, string title);

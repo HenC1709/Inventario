@@ -15,12 +15,12 @@ public interface ICatalogService
     /// <summary>
     /// Validates and creates a new product with a unique SKU.
     /// </summary>
-    Product CreateProduct(string name, string sku, decimal price);
+    Product CreateProduct(string name, string sku, decimal price, int minStock = 0);
 
     /// <summary>
     /// Validates and updates an existing product's fields.
     /// </summary>
-    void UpdateProduct(int id, string name, string sku, decimal price);
+    void UpdateProduct(int id, string name, string sku, decimal price, int minStock = 0);
 
     /// <summary>
     /// Deletes a product if it has no associated stock movements.

@@ -31,6 +31,7 @@ public static class DependencyInjection
 
         services.AddSingleton<WarehousesViewModel>();
         services.AddSingleton<ProductsViewModel>();
+        services.AddSingleton<StockViewModel>();
         services.AddSingleton<MovementsViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
@@ -60,10 +61,10 @@ public static class DependencyInjection
         warehouseRepository.Add(north);
         warehouseRepository.Add(south);
 
-        var rice = new Product("Arroz Extra 1kg", "ARR-001", 1.85m);
-        var oil = new Product("Aceite Vegetal 1L", "ACE-001", 3.40m);
-        var sugar = new Product("Azúcar Rubia 1kg", "AZU-001", 1.50m);
-        var milk = new Product("Leche Evaporada 400g", "LEC-001", 1.25m);
+        var rice = new Product("Arroz Extra 1kg", "ARR-001", 1.85m, minStock: 30);
+        var oil = new Product("Aceite Vegetal 1L", "ACE-001", 3.40m, minStock: 20);
+        var sugar = new Product("Azúcar Rubia 1kg", "AZU-001", 1.50m, minStock: 20);
+        var milk = new Product("Leche Evaporada 400g", "LEC-001", 1.25m, minStock: 25);
         productRepository.Add(rice);
         productRepository.Add(oil);
         productRepository.Add(sugar);
