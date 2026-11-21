@@ -8,7 +8,7 @@ using Xunit;
 namespace TiendaBodegas.Tests;
 
 /// <summary>
-/// Integration tests verifying JSON persistence and round-trip deserialization in <see cref="JsonDataContext"/>.
+/// Integration tests verifying JSON persistence, round-trip deserialization, and legacy compatibility in <see cref="JsonDataContext"/>.
 /// </summary>
 public class JsonDataContextTests : IDisposable
 {
@@ -29,38 +29,53 @@ public class JsonDataContextTests : IDisposable
     public void SaveAndLoadJson_PreservesAllEntityProperties()
     {
         var writeContext = new JsonDataContext(_tempDirectory);
-        var warehouseRepo = new WarehouseRepository(writeContext);
+        var supplierRepo = new SupplierRepository(writeContext);
         var productRepo = new ProductRepository(writeContext);
         var movementRepo = new StockMovementRepository(writeContext);
 
-        var warehouse = new Warehouse("Bodega Central", "Av. Principal 100");
-        warehouseRepo.Add(warehouse);
+        var supplier = new Supplier(
+            "Distribuidora del Norte S.A.",
+            "contacto@distnorte.com",
+            "Alimentos",
+            SupplierStatus.UnderReview);
+        supplierRepo.Add(supplier);
 
-        var product = new Product("Arroz 1kg", "ARR-001", 12.50m, minStock: 10);
+        var product = new Product(
+            "Arroz 1kg",
+            "ARR-001",
+            "Alimentos",
+            supplier.Id,
+            8.00m,
+            12.50m,
+            minStock: 10);
         productRepo.Add(product);
 
         var movement = new StockMovement(
             product.Id,
             25,
             MovementType.Entry,
-            null,
-            warehouse.Id,
             "Compra inicial");
         movementRepo.Add(movement);
 
         var readContext = new JsonDataContext(_tempDirectory);
         readContext.LoadJson();
 
-        var loadedWarehouse = Assert.Single(readContext.Warehouses);
-        Assert.Equal(warehouse.Id, loadedWarehouse.Id);
-        Assert.Equal("Bodega Central", loadedWarehouse.Name);
-        Assert.Equal("Av. Principal 100", loadedWarehouse.Address);
+        var loadedSupplier = Assert.Single(readContext.Suppliers);
+        Assert.Equal(supplier.Id, loadedSupplier.Id);
+        Assert.Equal("PRV-01", loadedSupplier.Code);
+        Assert.Equal("Distribuidora del Norte S.A.", loadedSupplier.Name);
+        Assert.Equal("contacto@distnorte.com", loadedSupplier.Contact);
+        Assert.Equal("Alimentos", loadedSupplier.MainCategory);
+        Assert.Equal(SupplierStatus.UnderReview, loadedSupplier.Status);
 
         var loadedProduct = Assert.Single(readContext.Products);
         Assert.Equal(product.Id, loadedProduct.Id);
         Assert.Equal("Arroz 1kg", loadedProduct.Name);
         Assert.Equal("ARR-001", loadedProduct.SKU);
-        Assert.Equal(12.50m, loadedProduct.Price);
+        Assert.Equal("Alimentos", loadedProduct.Category);
+        Assert.Equal(supplier.Id, loadedProduct.SupplierId);
+        Assert.Equal(8.00m, loadedProduct.PurchasePrice);
+        Assert.Equal(12.50m, loadedProduct.SalePrice);
         Assert.Equal(10, loadedProduct.MinStock);
 
         var loadedMovement = Assert.Single(readContext.StockMovements);
@@ -68,8 +83,6 @@ public class JsonDataContextTests : IDisposable
         Assert.Equal(product.Id, loadedMovement.ProductId);
         Assert.Equal(25, loadedMovement.Quantity);
         Assert.Equal(MovementType.Entry, loadedMovement.MovementType);
-        Assert.Null(loadedMovement.SourceWarehouseId);
-        Assert.Equal(warehouse.Id, loadedMovement.DestinationWarehouseId);
         Assert.Equal("Compra inicial", loadedMovement.Notes);
         Assert.Equal(movement.Date, loadedMovement.Date);
     }
@@ -83,17 +96,18 @@ public class JsonDataContextTests : IDisposable
         var context = new JsonDataContext(_tempDirectory);
         context.SaveJson();
 
-        Assert.True(File.Exists(Path.Combine(_tempDirectory, "bodegas.json")));
+        Assert.True(File.Exists(Path.Combine(_tempDirectory, "proveedores.json")));
         Assert.True(File.Exists(Path.Combine(_tempDirectory, "productos.json")));
         Assert.True(File.Exists(Path.Combine(_tempDirectory, "tickets.json")));
+        Assert.True(File.Exists(Path.Combine(_tempDirectory, "settings.json")));
         Assert.Empty(Directory.GetFiles(_tempDirectory, "*.tmp"));
     }
 
     /// <summary>
-    /// Verifies that legacy product JSON records lacking StockMinimo deserialize cleanly with MinStock set to zero.
+    /// Verifies that legacy product JSON records using <c>Precio</c> map to <see cref="Product.SalePrice"/> cleanly.
     /// </summary>
     [Fact]
-    public void LoadJson_WhenLegacyProductsLackMinStock_DefaultsToZero()
+    public void LoadJson_WhenLegacyProductsUsePrecioAndLackNewFields_PreservesSalePriceAndDefaults()
     {
         Directory.CreateDirectory(_tempDirectory);
         var legacyProductsJson = """
@@ -113,7 +127,35 @@ public class JsonDataContextTests : IDisposable
 
         var loadedProduct = Assert.Single(context.Products);
         Assert.Equal("Producto Legado", loadedProduct.Name);
+        Assert.Equal("LEG-001", loadedProduct.SKU);
+        Assert.Equal(9.95m, loadedProduct.SalePrice);
+        Assert.Equal(0m, loadedProduct.PurchasePrice);
+        Assert.Equal(string.Empty, loadedProduct.Category);
+        Assert.Null(loadedProduct.SupplierId);
         Assert.Equal(0, loadedProduct.MinStock);
+    }
+
+    /// <summary>
+    /// Verifies that legacy transfer movements in <c>tickets.json</c> are ignored when loading single-warehouse history.
+    /// </summary>
+    [Fact]
+    public void LoadJson_WhenLegacyTicketsContainTransfers_IgnoresNonSingleWarehouseMovements()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        var legacyTicketsJson = """
+        [
+          { "Id": 1, "Fecha": "2026-11-01T10:00:00", "ProductoId": 1, "Cantidad": 20, "Tipo": 0, "Observaciones": "Entrada" },
+          { "Id": 2, "Fecha": "2026-11-01T11:00:00", "ProductoId": 1, "Cantidad": 5, "Tipo": 2, "Observaciones": "Traslado legado" },
+          { "Id": 3, "Fecha": "2026-11-01T12:00:00", "ProductoId": 1, "Cantidad": 4, "Tipo": 1, "Observaciones": "Salida" }
+        ]
+        """;
+        File.WriteAllText(Path.Combine(_tempDirectory, "tickets.json"), legacyTicketsJson);
+
+        var context = new JsonDataContext(_tempDirectory);
+        context.LoadJson();
+
+        Assert.Equal(2, context.StockMovements.Count);
+        Assert.DoesNotContain(context.StockMovements, m => m.Notes == "Traslado legado");
     }
 
     /// <summary>

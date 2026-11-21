@@ -1,11 +1,11 @@
-using System.Windows;
+using Microsoft.Win32;
 using TiendaBodegas.UI.ViewModels;
 using TiendaBodegas.UI.Views;
 
 namespace TiendaBodegas.UI.Services;
 
 /// <summary>
-/// WPF implementation of <see cref="IDialogService"/> using modal windows and message boxes.
+/// WPF implementation of <see cref="IDialogService"/> using styled modal windows and native file dialogs.
 /// </summary>
 public class DialogService : IDialogService
 {
@@ -23,11 +23,11 @@ public class DialogService : IDialogService
     }
 
     /// <summary>
-    /// Opens <see cref="WarehouseFormWindow"/> modally over the main window.
+    /// Opens <see cref="SupplierFormWindow"/> modally over the main window.
     /// </summary>
-    public bool ShowWarehouseForm(WarehouseFormViewModel viewModel)
+    public bool ShowSupplierForm(SupplierFormViewModel viewModel)
     {
-        var window = new WarehouseFormWindow(viewModel)
+        var window = new SupplierFormWindow(viewModel)
         {
             Owner = System.Windows.Application.Current?.MainWindow
         };
@@ -49,16 +49,32 @@ public class DialogService : IDialogService
     }
 
     /// <summary>
-    /// Displays a Yes/No confirmation message box and returns true when the user selects Yes.
+    /// Displays the styled <see cref="ConfirmDialogWindow"/> and returns true when the user confirms.
     /// </summary>
     public bool Confirm(string message, string title)
     {
-        var result = MessageBox.Show(
-            message,
-            title,
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+        var window = new ConfirmDialogWindow(title, message)
+        {
+            Owner = System.Windows.Application.Current?.MainWindow
+        };
 
-        return result == MessageBoxResult.Yes;
+        return window.ShowDialog() == true;
+    }
+
+    /// <summary>
+    /// Displays a <see cref="SaveFileDialog"/> and returns the chosen path, or null when cancelled.
+    /// </summary>
+    public string? ShowSaveFileDialog(string defaultFileName, string filter)
+    {
+        var dialog = new SaveFileDialog
+        {
+            FileName = defaultFileName,
+            Filter = filter,
+            AddExtension = true
+        };
+
+        return dialog.ShowDialog(System.Windows.Application.Current?.MainWindow) == true
+            ? dialog.FileName
+            : null;
     }
 }

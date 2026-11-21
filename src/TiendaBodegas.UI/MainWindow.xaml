@@ -3,122 +3,214 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:TiendaBodegas.UI.Views"
         xmlns:vm="clr-namespace:TiendaBodegas.UI.ViewModels"
-        Title="TiendaBodegas — Control de Inventario"
-        Width="1050"
-        Height="650"
-        MinWidth="820"
-        MinHeight="500"
+        Title="Sistema de Gestión de Inventario v1.4 — TiendaBodegas"
+        Icon="pack://application:,,,/TiendaBodegas.UI;component/Assets/Inventory.ico"
+        Width="1280"
+        Height="780"
+        MinWidth="980"
+        MinHeight="640"
         WindowStartupLocation="CenterScreen"
-        Background="#F4F6F9">
+        Background="{StaticResource AppBackgroundBrush}"
+        FontFamily="{StaticResource AppFontFamily}">
     <Window.Resources>
-        <DataTemplate DataType="{x:Type vm:WarehousesViewModel}">
-            <views:WarehousesView />
+        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+            <views:DashboardView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:ProductsViewModel}">
-            <views:ProductsView />
+        <DataTemplate DataType="{x:Type vm:InventoryViewModel}">
+            <views:InventoryView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:StockViewModel}">
-            <views:StockView />
+        <DataTemplate DataType="{x:Type vm:SuppliersViewModel}">
+            <views:SuppliersView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:MovementsViewModel}">
             <views:MovementsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
+            <views:ReportsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView />
+        </DataTemplate>
 
-        <Style x:Key="SidebarButtonStyle" TargetType="Button">
+        <Style x:Key="SidebarFooterButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="#E2E8F0" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontWeight" Value="Medium" />
-            <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="Padding" Value="16,12" />
-            <Setter Property="Margin" Value="0,4" />
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="6"
+                        <Border x:Name="FooterBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="10"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="Center" />
+                            <ContentPresenter />
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="FooterBorder" Property="Background" Value="{StaticResource Pearl200Brush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#334155" />
-                    <Setter Property="Foreground" Value="#FFFFFF" />
-                </Trigger>
-            </Style.Triggers>
         </Style>
     </Window.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="232" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Background="#1E293B" Padding="16,24">
+        <!-- Sidebar Izquierdo Perlado -->
+        <Border Grid.Column="0"
+                Background="{StaticResource SidebarBackgroundBrush}"
+                BorderBrush="{StaticResource Pearl300Brush}"
+                BorderThickness="0,0,1,0">
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Margin="4,0,4,28">
-                    <TextBlock Text="TiendaBodegas"
-                               Foreground="#FFFFFF"
-                               FontSize="20"
-                               FontWeight="Bold" />
-                    <TextBlock Text="Gestión de Inventario"
-                               Foreground="#94A3B8"
-                               FontSize="12"
-                               Margin="0,4,0,0" />
+                <!-- Navegación Principal -->
+                <StackPanel DockPanel.Dock="Top" Margin="12,24,12,0">
+                    <Button Command="{Binding ShowDashboardCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDashboardActive}" Value="True">
+                                        <Setter Property="Tag" Value="Active" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="DASHBOARD" />
+                    </Button>
+
+                    <Button Command="{Binding ShowInventoryCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsInventoryActive}" Value="True">
+                                        <Setter Property="Tag" Value="Active" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Grid>
+                            <TextBlock Text="INVENTARIO" VerticalAlignment="Center" />
+                            <Border HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="999"
+                                    Padding="8,2"
+                                    Background="{StaticResource SurfaceWhiteBrush}"
+                                    BorderBrush="{StaticResource Pearl200Brush}"
+                                    BorderThickness="1">
+                                <TextBlock Text="{Binding InventoryCount}"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Warm700Brush}" />
+                            </Border>
+                        </Grid>
+                    </Button>
+
+                    <Button Command="{Binding ShowSuppliersCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSuppliersActive}" Value="True">
+                                        <Setter Property="Tag" Value="Active" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="PROVEEDORES" />
+                    </Button>
+
+                    <Button Command="{Binding ShowSalesCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSalesActive}" Value="True">
+                                        <Setter Property="Tag" Value="Active" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="VENTAS" />
+                    </Button>
+
+                    <Button Command="{Binding ShowReportsCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsReportsActive}" Value="True">
+                                        <Setter Property="Tag" Value="Active" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="REPORTES" />
+                    </Button>
+
+                    <Button Command="{Binding ShowSettingsCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSettingsActive}" Value="True">
+                                        <Setter Property="Tag" Value="Active" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="AJUSTES" />
+                    </Button>
                 </StackPanel>
 
-                <StackPanel DockPanel.Dock="Top">
-                    <Button Content="Bodegas"
-                            Command="{Binding ShowWarehousesCommand}"
-                            Style="{StaticResource SidebarButtonStyle}" />
-                    <Button Content="Productos"
-                            Command="{Binding ShowProductsCommand}"
-                            Style="{StaticResource SidebarButtonStyle}" />
-                    <Button Content="Stock por Bodega"
-                            Command="{Binding ShowStockCommand}"
-                            Style="{StaticResource SidebarButtonStyle}" />
-                    <Button Content="Movimientos"
-                            Command="{Binding ShowMovementsCommand}"
-                            Style="{StaticResource SidebarButtonStyle}" />
-                </StackPanel>
-
-                <TextBlock DockPanel.Dock="Bottom"
-                           VerticalAlignment="Bottom"
-                           Text="MVP 1 · Base WPF"
-                           Foreground="#64748B"
-                           FontSize="11"
-                           Margin="4,0,0,0" />
+                <!-- Bloque de Usuario Inferior -->
+                <Border DockPanel.Dock="Bottom"
+                        VerticalAlignment="Bottom"
+                        BorderBrush="{StaticResource Pearl300Brush}"
+                        BorderThickness="0,1,0,0"
+                        Padding="12,12">
+                    <Button Command="{Binding ShowSettingsCommand}"
+                            Style="{StaticResource SidebarFooterButtonStyle}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="36"
+                                    Height="36"
+                                    CornerRadius="18"
+                                    Background="{StaticResource Pearl200Brush}"
+                                    BorderBrush="{StaticResource Pearl300Brush}"
+                                    BorderThickness="1"
+                                    Margin="0,0,10,0">
+                                <Path Data="M 8,6.5 A 3,3 0 1 1 8,0.5 A 3,3 0 1 1 8,6.5 Z M 2,14.5 C 2,11.2 4.7,9.2 8,9.2 C 11.3,9.2 14,11.2 14,14.5"
+                                      Stroke="{StaticResource Stone600Brush}"
+                                      StrokeThickness="1.5"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Width="16"
+                                      Height="16"
+                                      Stretch="Uniform"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Admin"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource Stone800Brush}" />
+                                <TextBlock Text="Usuario"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+                </Border>
             </DockPanel>
         </Border>
 
+        <!-- Área Principal de Contenido -->
         <Grid Grid.Column="1" Margin="28,24">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <TextBlock Grid.Row="0"
-                       Text="{Binding CurrentSectionTitle}"
-                       FontSize="24"
-                       FontWeight="SemiBold"
-                       Foreground="#0F172A"
-                       Margin="0,0,0,16" />
-
-            <Border Grid.Row="1"
-                    Background="#FFFFFF"
-                    BorderBrush="#E2E8F0"
-                    BorderThickness="1"
-                    CornerRadius="8"
-                    Padding="20">
-                <ContentControl Content="{Binding CurrentViewModel}" />
-            </Border>
+            <ContentControl Content="{Binding CurrentViewModel}" />
         </Grid>
     </Grid>
 </Window>

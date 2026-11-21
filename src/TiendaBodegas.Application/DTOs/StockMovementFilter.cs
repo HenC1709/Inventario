@@ -9,5 +9,4 @@ public sealed record StockMovementFilter(
     DateTime? FromDate = null,
     DateTime? ToDate = null,
     MovementType? MovementType = null,
-    int? WarehouseId = null,
     int? ProductId = null);

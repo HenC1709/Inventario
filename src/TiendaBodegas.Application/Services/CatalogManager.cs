@@ -1,16 +1,17 @@
 using TiendaBodegas.Application.Interfaces;
 using TiendaBodegas.Domain.Entities;
+using TiendaBodegas.Domain.Enums;
 using TiendaBodegas.Domain.Interfaces;
 
 namespace TiendaBodegas.Application.Services;
 
 /// <summary>
-/// Application service enforcing validation and referential integrity rules for products and warehouses.
+/// Application service enforcing validation and referential integrity rules for products and suppliers.
 /// </summary>
 public class CatalogManager : ICatalogService
 {
     private readonly IProductRepository _productRepository;
-    private readonly IWarehouseRepository _warehouseRepository;
+    private readonly ISupplierRepository _supplierRepository;
     private readonly IStockMovementRepository _movementRepository;
 
     /// <summary>
@@ -18,11 +19,11 @@ public class CatalogManager : ICatalogService
     /// </summary>
     public CatalogManager(
         IProductRepository productRepository,
-        IWarehouseRepository warehouseRepository,
+        ISupplierRepository supplierRepository,
         IStockMovementRepository movementRepository)
     {
         _productRepository = productRepository;
-        _warehouseRepository = warehouseRepository;
+        _supplierRepository = supplierRepository;
         _movementRepository = movementRepository;
     }
 
@@ -32,28 +33,43 @@ public class CatalogManager : ICatalogService
     public IEnumerable<Product> GetAllProducts() => _productRepository.GetAll();
 
     /// <summary>
-    /// Validates product inputs, checks SKU uniqueness, and creates a new product.
+    /// Validates product inputs, checks SKU uniqueness and supplier existence, and creates a new product.
     /// </summary>
-    public Product CreateProduct(string name, string sku, decimal price, int minStock = 0)
+    public Product CreateProduct(
+        string name,
+        string sku,
+        string category,
+        int? supplierId,
+        decimal purchasePrice,
+        decimal salePrice,
+        int minStock = 0)
     {
-        ValidateProductInputs(name, sku, price, minStock, excludeProductId: null);
+        ValidateProductInputs(name, sku, category, supplierId, purchasePrice, salePrice, minStock, excludeProductId: null);
 
-        var product = new Product(name.Trim(), sku.Trim(), price, minStock);
+        var product = new Product(name, sku, category, supplierId, purchasePrice, salePrice, minStock);
         _productRepository.Add(product);
         return product;
     }
 
     /// <summary>
-    /// Validates product inputs, checks SKU uniqueness, and updates the matching product.
+    /// Validates product inputs, checks SKU uniqueness and supplier existence, and updates the matching product.
     /// </summary>
-    public void UpdateProduct(int id, string name, string sku, decimal price, int minStock = 0)
+    public void UpdateProduct(
+        int id,
+        string name,
+        string sku,
+        string category,
+        int? supplierId,
+        decimal purchasePrice,
+        decimal salePrice,
+        int minStock = 0)
     {
         var existing = _productRepository.GetById(id)
             ?? throw new ArgumentException("El producto especificado no existe.", nameof(id));
 
-        ValidateProductInputs(name, sku, price, minStock, excludeProductId: id);
+        ValidateProductInputs(name, sku, category, supplierId, purchasePrice, salePrice, minStock, excludeProductId: id);
 
-        existing.Update(name, sku, price, minStock);
+        existing.Update(name, sku, category, supplierId, purchasePrice, salePrice, minStock);
         _productRepository.Update(existing);
     }
 
@@ -65,7 +81,7 @@ public class CatalogManager : ICatalogService
         _ = _productRepository.GetById(id)
             ?? throw new ArgumentException("El producto especificado no existe.", nameof(id));
 
-        if (_movementRepository.GetAll().Any(movement => movement.ProductId == id))
+        if (_movementRepository.GetByProductId(id).Any())
             throw new InvalidOperationException("No se puede eliminar un producto que ya tiene movimientos registrados.");
 
         _productRepository.Delete(id);
@@ -84,54 +100,85 @@ public class CatalogManager : ICatalogService
     }
 
     /// <summary>
-    /// Retrieves all persisted warehouses.
+    /// Retrieves all persisted suppliers.
     /// </summary>
-    public IEnumerable<Warehouse> GetAllWarehouses() => _warehouseRepository.GetAll();
+    public IEnumerable<Supplier> GetAllSuppliers() => _supplierRepository.GetAll();
 
     /// <summary>
-    /// Validates warehouse inputs and creates a new warehouse.
+    /// Validates supplier inputs, verifies optional code uniqueness, and creates a new supplier.
     /// </summary>
-    public Warehouse CreateWarehouse(string name, string address)
+    public Supplier CreateSupplier(
+        string name,
+        string contact,
+        string mainCategory,
+        SupplierStatus status = SupplierStatus.Active,
+        string code = "")
     {
-        ValidateWarehouseInputs(name, address);
+        ValidateSupplierInputs(name, contact, mainCategory, status, code, excludeSupplierId: null);
 
-        var warehouse = new Warehouse(name.Trim(), address.Trim());
-        _warehouseRepository.Add(warehouse);
-        return warehouse;
+        var supplier = new Supplier(name, contact, mainCategory, status, code);
+        _supplierRepository.Add(supplier);
+        return supplier;
     }
 
     /// <summary>
-    /// Validates warehouse inputs and updates the matching warehouse.
+    /// Validates supplier inputs, verifies optional code uniqueness, and updates the matching supplier.
     /// </summary>
-    public void UpdateWarehouse(int id, string name, string address)
+    public void UpdateSupplier(
+        int id,
+        string name,
+        string contact,
+        string mainCategory,
+        SupplierStatus status,
+        string? code = null)
     {
-        var existing = _warehouseRepository.GetById(id)
-            ?? throw new ArgumentException("La bodega especificada no existe.", nameof(id));
+        var existing = _supplierRepository.GetById(id)
+            ?? throw new ArgumentException("El proveedor especificado no existe.", nameof(id));
 
-        ValidateWarehouseInputs(name, address);
+        ValidateSupplierInputs(name, contact, mainCategory, status, code, excludeSupplierId: id);
 
-        existing.Update(name, address);
-        _warehouseRepository.Update(existing);
+        existing.Update(name, contact, mainCategory, status, code);
+        _supplierRepository.Update(existing);
     }
 
     /// <summary>
-    /// Deletes a warehouse only when it has no recorded stock movements.
+    /// Deletes a supplier only when it has no linked products.
     /// </summary>
-    public void DeleteWarehouse(int id)
+    public void DeleteSupplier(int id)
     {
-        _ = _warehouseRepository.GetById(id)
-            ?? throw new ArgumentException("La bodega especificada no existe.", nameof(id));
+        _ = _supplierRepository.GetById(id)
+            ?? throw new ArgumentException("El proveedor especificado no existe.", nameof(id));
 
-        if (_movementRepository.GetByWarehouseId(id).Any())
-            throw new InvalidOperationException("No se puede eliminar una bodega que ya tiene movimientos registrados.");
+        if (_productRepository.GetBySupplierId(id).Any())
+            throw new InvalidOperationException("No se puede eliminar un proveedor que tiene productos asociados.");
 
-        _warehouseRepository.Delete(id);
+        _supplierRepository.Delete(id);
     }
 
     /// <summary>
-    /// Validates required fields, positive price, non-negative minimum stock, and SKU uniqueness for product creation or update.
+    /// Determines whether the provided supplier code is non-empty and free to use (optionally excluding the supplier being edited).
     /// </summary>
-    private void ValidateProductInputs(string name, string sku, decimal price, int minStock, int? excludeProductId)
+    public bool IsSupplierCodeAvailable(string code, int? excludeSupplierId = null)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+            return false;
+
+        var existing = _supplierRepository.GetByCode(code.Trim());
+        return existing == null || (excludeSupplierId.HasValue && existing.Id == excludeSupplierId.Value);
+    }
+
+    /// <summary>
+    /// Validates required fields, pricing bounds, supplier reference, non-negative minimum stock, and SKU uniqueness.
+    /// </summary>
+    private void ValidateProductInputs(
+        string name,
+        string sku,
+        string category,
+        int? supplierId,
+        decimal purchasePrice,
+        decimal salePrice,
+        int minStock,
+        int? excludeProductId)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre del producto es obligatorio.", nameof(name));
@@ -139,25 +186,49 @@ public class CatalogManager : ICatalogService
         if (string.IsNullOrWhiteSpace(sku))
             throw new ArgumentException("El SKU del producto es obligatorio.", nameof(sku));
 
-        if (price <= 0)
-            throw new ArgumentOutOfRangeException(nameof(price), "El precio debe ser mayor a cero.");
+        if (string.IsNullOrWhiteSpace(category))
+            throw new ArgumentException("La categoría del producto es obligatoria.", nameof(category));
+
+        if (purchasePrice < 0)
+            throw new ArgumentOutOfRangeException(nameof(purchasePrice), "El precio de compra no puede ser negativo.");
+
+        if (salePrice <= 0)
+            throw new ArgumentOutOfRangeException(nameof(salePrice), "El precio de venta debe ser mayor a cero.");
 
         if (minStock < 0)
             throw new ArgumentOutOfRangeException(nameof(minStock), "El stock mínimo no puede ser negativo.");
+
+        if (supplierId.HasValue && _supplierRepository.GetById(supplierId.Value) == null)
+            throw new ArgumentException("El proveedor especificado no existe.", nameof(supplierId));
 
         if (!IsSkuAvailable(sku, excludeProductId))
             throw new InvalidOperationException("Ya existe un producto con el mismo SKU.");
     }
 
     /// <summary>
-    /// Validates required fields for warehouse creation or update.
+    /// Validates required fields, status enum value, and optional code uniqueness for supplier creation or update.
     /// </summary>
-    private static void ValidateWarehouseInputs(string name, string address)
+    private void ValidateSupplierInputs(
+        string name,
+        string contact,
+        string mainCategory,
+        SupplierStatus status,
+        string? code,
+        int? excludeSupplierId)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre de la bodega es obligatorio.", nameof(name));
+            throw new ArgumentException("La razón social del proveedor es obligatoria.", nameof(name));
 
-        if (string.IsNullOrWhiteSpace(address))
-            throw new ArgumentException("La dirección de la bodega es obligatoria.", nameof(address));
+        if (string.IsNullOrWhiteSpace(contact))
+            throw new ArgumentException("El contacto del proveedor es obligatorio.", nameof(contact));
+
+        if (string.IsNullOrWhiteSpace(mainCategory))
+            throw new ArgumentException("La categoría principal del proveedor es obligatoria.", nameof(mainCategory));
+
+        if (!Enum.IsDefined(status))
+            throw new ArgumentOutOfRangeException(nameof(status), "El estado del proveedor no es válido.");
+
+        if (!string.IsNullOrWhiteSpace(code) && !IsSupplierCodeAvailable(code, excludeSupplierId))
+            throw new InvalidOperationException("Ya existe un proveedor con el mismo código.");
     }
 }

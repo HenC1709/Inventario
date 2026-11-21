@@ -1,0 +1,124 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ==================== PEARL & SURFACE PALETTE ==================== -->
+    <Color x:Key="Pearl50Color">#FDFCFB</Color>
+    <Color x:Key="Pearl100Color">#F9F7F4</Color>
+    <Color x:Key="Pearl200Color">#F2EEE9</Color>
+    <Color x:Key="Pearl300Color">#E5DFD7</Color>
+    <Color x:Key="SurfaceWhiteColor">#FFFFFF</Color>
+    <Color x:Key="WindowChromeColor">#F6F3EF</Color>
+
+    <SolidColorBrush x:Key="Pearl50Brush" Color="{StaticResource Pearl50Color}" />
+    <SolidColorBrush x:Key="Pearl100Brush" Color="{StaticResource Pearl100Color}" />
+    <SolidColorBrush x:Key="Pearl200Brush" Color="{StaticResource Pearl200Color}" />
+    <SolidColorBrush x:Key="Pearl300Brush" Color="{StaticResource Pearl300Color}" />
+    <SolidColorBrush x:Key="SurfaceWhiteBrush" Color="{StaticResource SurfaceWhiteColor}" />
+    <SolidColorBrush x:Key="WindowChromeBrush" Color="{StaticResource WindowChromeColor}" />
+
+    <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FDFCFB" Offset="0.0" />
+        <GradientStop Color="#F7F4F0" Offset="0.5" />
+        <GradientStop Color="#F3EFEA" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="SidebarBackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#FCFBF9" Offset="0.0" />
+        <GradientStop Color="#F4F0EB" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- ==================== STONE TEXT SCALE ==================== -->
+    <Color x:Key="TextPrimaryColor">#1C1917</Color>
+    <Color x:Key="Stone800Color">#292524</Color>
+    <Color x:Key="TextSecondaryColor">#44403C</Color>
+    <Color x:Key="Stone600Color">#57534E</Color>
+    <Color x:Key="TextMutedColor">#78716C</Color>
+    <Color x:Key="TextSubtleColor">#A8A29E</Color>
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="Stone800Brush" Color="{StaticResource Stone800Color}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="Stone600Brush" Color="{StaticResource Stone600Color}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
+    <SolidColorBrush x:Key="TextSubtleBrush" Color="{StaticResource TextSubtleColor}" />
+
+    <!-- ==================== WARM ACCENTS (TERRACOTTA / PEACH) ==================== -->
+    <Color x:Key="Warm50Color">#FFF6F0</Color>
+    <Color x:Key="Warm100Color">#FDE8D8</Color>
+    <Color x:Key="Warm200Color">#F9D1B3</Color>
+    <Color x:Key="Warm500Color">#C86D44</Color>
+    <Color x:Key="Warm600Color">#A6522E</Color>
+    <Color x:Key="Warm700Color">#843E20</Color>
+
+    <SolidColorBrush x:Key="Warm50Brush" Color="{StaticResource Warm50Color}" />
+    <SolidColorBrush x:Key="Warm100Brush" Color="{StaticResource Warm100Color}" />
+    <SolidColorBrush x:Key="Warm200Brush" Color="{StaticResource Warm200Color}" />
+    <SolidColorBrush x:Key="Warm500Brush" Color="{StaticResource Warm500Color}" />
+    <SolidColorBrush x:Key="Warm600Brush" Color="{StaticResource Warm600Color}" />
+    <SolidColorBrush x:Key="Warm700Brush" Color="{StaticResource Warm700Color}" />
+
+    <!-- ==================== COOL CONTROLS (NAVY / STEEL) ==================== -->
+    <Color x:Key="Cool50Color">#EFF5FA</Color>
+    <Color x:Key="Cool100Color">#DCE8F3</Color>
+    <Color x:Key="Cool200Color">#BDD3E8</Color>
+    <Color x:Key="Cool500Color">#2E6796</Color>
+    <Color x:Key="Cool600Color">#1E4E79</Color>
+    <Color x:Key="Cool700Color">#163B5C</Color>
+    <Color x:Key="Cool800Color">#0F2A42</Color>
+
+    <SolidColorBrush x:Key="Cool50Brush" Color="{StaticResource Cool50Color}" />
+    <SolidColorBrush x:Key="Cool100Brush" Color="{StaticResource Cool100Color}" />
+    <SolidColorBrush x:Key="Cool200Brush" Color="{StaticResource Cool200Color}" />
+    <SolidColorBrush x:Key="Cool500Brush" Color="{StaticResource Cool500Color}" />
+    <SolidColorBrush x:Key="Cool600Brush" Color="{StaticResource Cool600Color}" />
+    <SolidColorBrush x:Key="Cool700Brush" Color="{StaticResource Cool700Color}" />
+    <SolidColorBrush x:Key="Cool800Brush" Color="{StaticResource Cool800Color}" />
+
+    <!-- ==================== SEMANTIC STATUS TOKENS ==================== -->
+    <Color x:Key="SuccessBgColor">#D1FAE5</Color>
+    <Color x:Key="SuccessBorderColor">#A7F3D0</Color>
+    <Color x:Key="SuccessTextColor">#065F46</Color>
+    <Color x:Key="SuccessDotColor">#10B981</Color>
+
+    <SolidColorBrush x:Key="SuccessBgBrush" Color="{StaticResource SuccessBgColor}" />
+    <SolidColorBrush x:Key="SuccessBorderBrush" Color="{StaticResource SuccessBorderColor}" />
+    <SolidColorBrush x:Key="SuccessTextBrush" Color="{StaticResource SuccessTextColor}" />
+    <SolidColorBrush x:Key="SuccessDotBrush" Color="{StaticResource SuccessDotColor}" />
+
+    <Color x:Key="WarningBgColor">#FDE8D8</Color>
+    <Color x:Key="WarningBorderColor">#F9D1B3</Color>
+    <Color x:Key="WarningTextColor">#843E20</Color>
+
+    <SolidColorBrush x:Key="WarningBgBrush" Color="{StaticResource WarningBgColor}" />
+    <SolidColorBrush x:Key="WarningBorderBrush" Color="{StaticResource WarningBorderColor}" />
+    <SolidColorBrush x:Key="WarningTextBrush" Color="{StaticResource WarningTextColor}" />
+
+    <Color x:Key="DangerBgColor">#FEE2E2</Color>
+    <Color x:Key="DangerBorderColor">#FECACA</Color>
+    <Color x:Key="DangerTextColor">#B91C1C</Color>
+    <Color x:Key="DangerStrongColor">#DC2626</Color>
+
+    <SolidColorBrush x:Key="DangerBgBrush" Color="{StaticResource DangerBgColor}" />
+    <SolidColorBrush x:Key="DangerBorderBrush" Color="{StaticResource DangerBorderColor}" />
+    <SolidColorBrush x:Key="DangerTextBrush" Color="{StaticResource DangerTextColor}" />
+    <SolidColorBrush x:Key="DangerStrongBrush" Color="{StaticResource DangerStrongColor}" />
+
+    <!-- ==================== SHADOWS & TYPOGRAPHY ==================== -->
+    <DropShadowEffect x:Key="CardShadowEffect"
+                      BlurRadius="12"
+                      ShadowDepth="2"
+                      Direction="270"
+                      Opacity="0.06"
+                      Color="#5A4637" />
+
+    <DropShadowEffect x:Key="ModalShadowEffect"
+                      BlurRadius="28"
+                      ShadowDepth="8"
+                      Direction="270"
+                      Opacity="0.16"
+                      Color="#2D2620" />
+
+    <FontFamily x:Key="AppFontFamily">Segoe UI</FontFamily>
+    <FontFamily x:Key="MonoFontFamily">Consolas</FontFamily>
+
+</ResourceDictionary>

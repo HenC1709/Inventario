@@ -37,13 +37,11 @@ public class StockMovementRepository : IStockMovementRepository
     }
 
     /// <summary>
-    /// Retrieves all movements where the specified warehouse appears as source or destination.
+    /// Retrieves all movements associated with the specified product identifier.
     /// </summary>
-    public IEnumerable<StockMovement> GetByWarehouseId(int warehouseId)
+    public IEnumerable<StockMovement> GetByProductId(int productId)
     {
-        return _context.StockMovements.Where(movement =>
-            movement.SourceWarehouseId == warehouseId ||
-            movement.DestinationWarehouseId == warehouseId);
+        return _context.StockMovements.Where(movement => movement.ProductId == productId);
     }
 
     /// <summary>

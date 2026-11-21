@@ -1,9 +1,10 @@
 using TiendaBodegas.Domain.Entities;
+using TiendaBodegas.Domain.Enums;
 
 namespace TiendaBodegas.Application.Interfaces;
 
 /// <summary>
-/// Application service contract for CRUD management of products and warehouses.
+/// Application service contract for CRUD management of products and suppliers.
 /// </summary>
 public interface ICatalogService
 {
@@ -15,12 +16,27 @@ public interface ICatalogService
     /// <summary>
     /// Validates and creates a new product with a unique SKU.
     /// </summary>
-    Product CreateProduct(string name, string sku, decimal price, int minStock = 0);
+    Product CreateProduct(
+        string name,
+        string sku,
+        string category,
+        int? supplierId,
+        decimal purchasePrice,
+        decimal salePrice,
+        int minStock = 0);
 
     /// <summary>
     /// Validates and updates an existing product's fields.
     /// </summary>
-    void UpdateProduct(int id, string name, string sku, decimal price, int minStock = 0);
+    void UpdateProduct(
+        int id,
+        string name,
+        string sku,
+        string category,
+        int? supplierId,
+        decimal purchasePrice,
+        decimal salePrice,
+        int minStock = 0);
 
     /// <summary>
     /// Deletes a product if it has no associated stock movements.
@@ -33,22 +49,38 @@ public interface ICatalogService
     bool IsSkuAvailable(string sku, int? excludeProductId = null);
 
     /// <summary>
-    /// Retrieves all warehouses.
+    /// Retrieves all suppliers in the catalog.
     /// </summary>
-    IEnumerable<Warehouse> GetAllWarehouses();
+    IEnumerable<Supplier> GetAllSuppliers();
 
     /// <summary>
-    /// Validates and creates a new warehouse.
+    /// Validates and creates a new supplier.
     /// </summary>
-    Warehouse CreateWarehouse(string name, string address);
+    Supplier CreateSupplier(
+        string name,
+        string contact,
+        string mainCategory,
+        SupplierStatus status = SupplierStatus.Active,
+        string code = "");
 
     /// <summary>
-    /// Validates and updates an existing warehouse's fields.
+    /// Validates and updates an existing supplier's fields.
     /// </summary>
-    void UpdateWarehouse(int id, string name, string address);
+    void UpdateSupplier(
+        int id,
+        string name,
+        string contact,
+        string mainCategory,
+        SupplierStatus status,
+        string? code = null);
 
     /// <summary>
-    /// Deletes a warehouse if it has no associated stock movements.
+    /// Deletes a supplier if it has no linked products.
     /// </summary>
-    void DeleteWarehouse(int id);
+    void DeleteSupplier(int id);
+
+    /// <summary>
+    /// Checks whether a supplier code is valid and available (ignoring the given supplier id during edits).
+    /// </summary>
+    bool IsSupplierCodeAvailable(string code, int? excludeSupplierId = null);
 }

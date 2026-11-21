@@ -3,13 +3,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TiendaBodegas.Application.DTOs;
 using TiendaBodegas.Application.Interfaces;
+using TiendaBodegas.Domain.Entities;
 using TiendaBodegas.Domain.Enums;
 using TiendaBodegas.UI.Services;
 
 namespace TiendaBodegas.UI.ViewModels;
 
 /// <summary>
-/// ViewModel managing the filterable inventory movement history and registration actions via application services.
+/// ViewModel managing the filterable inventory movement history and entry/exit registration actions.
 /// </summary>
 public partial class MovementsViewModel : ObservableObject
 {
@@ -18,7 +19,14 @@ public partial class MovementsViewModel : ObservableObject
     private readonly IInventoryService _inventoryService;
     private readonly ICatalogService _catalogService;
     private readonly IDialogService _dialogService;
+    private readonly ISettingsService? _settingsService;
     private bool _isUpdatingFilters;
+
+    [ObservableProperty]
+    private string _currencyCode = "USD";
+
+    [ObservableProperty]
+    private string _currencySymbol = "$";
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -35,9 +43,6 @@ public partial class MovementsViewModel : ObservableObject
     [ObservableProperty]
     private MovementTypeFilterOption _selectedMovementTypeFilter;
 
-    [ObservableProperty]
-    private WarehouseFilterOption? _selectedWarehouseFilter;
-
     /// <summary>
     /// Gets the selectable movement type filter options including "Todos".
     /// </summary>
@@ -45,14 +50,8 @@ public partial class MovementsViewModel : ObservableObject
     {
         new MovementTypeFilterOption(null, "Todos"),
         new MovementTypeFilterOption(MovementType.Entry, "Entrada"),
-        new MovementTypeFilterOption(MovementType.Exit, "Salida"),
-        new MovementTypeFilterOption(MovementType.Transfer, "Traslado")
+        new MovementTypeFilterOption(MovementType.Exit, "Salida")
     };
-
-    /// <summary>
-    /// Gets the selectable warehouse filter options including "Todas".
-    /// </summary>
-    public ObservableCollection<WarehouseFilterOption> WarehouseFilters { get; } = new();
 
     /// <summary>
     /// Gets the observable collection of enriched stock movements bound to the UI.
@@ -65,40 +64,31 @@ public partial class MovementsViewModel : ObservableObject
     public MovementsViewModel(
         IInventoryService inventoryService,
         ICatalogService catalogService,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        ISettingsService? settingsService = null)
     {
         _inventoryService = inventoryService;
         _catalogService = catalogService;
         _dialogService = dialogService;
+        _settingsService = settingsService;
         _selectedMovementTypeFilter = MovementTypeFilters[0];
+
+        if (_settingsService != null)
+        {
+            var settings = _settingsService.GetSettings();
+            CurrencyCode = settings.CurrencyCode;
+            CurrencySymbol = settings.CurrencySymbol;
+            _settingsService.SettingsChanged += OnSettingsChanged;
+        }
+
         LoadData();
     }
 
     /// <summary>
-    /// Reloads warehouse filter options and reapplies active filters to <see cref="Movements"/>.
+    /// Reloads movement history using the currently active filters.
     /// </summary>
     public void LoadData()
     {
-        _isUpdatingFilters = true;
-        try
-        {
-            var previousWarehouseId = SelectedWarehouseFilter?.WarehouseId;
-            WarehouseFilters.Clear();
-            WarehouseFilters.Add(new WarehouseFilterOption(null, "Todas"));
-            foreach (var warehouse in _catalogService.GetAllWarehouses())
-            {
-                WarehouseFilters.Add(new WarehouseFilterOption(warehouse.Id, warehouse.Name));
-            }
-
-            SelectedWarehouseFilter = previousWarehouseId.HasValue
-                ? WarehouseFilters.FirstOrDefault(w => w.WarehouseId == previousWarehouseId.Value) ?? WarehouseFilters.FirstOrDefault()
-                : WarehouseFilters.FirstOrDefault();
-        }
-        finally
-        {
-            _isUpdatingFilters = false;
-        }
-
         ApplyFilters();
     }
 
@@ -114,7 +104,6 @@ public partial class MovementsViewModel : ObservableObject
             FromDate = null;
             ToDate = null;
             SelectedMovementTypeFilter = MovementTypeFilters[0];
-            SelectedWarehouseFilter = WarehouseFilters.FirstOrDefault();
         }
         finally
         {
@@ -140,15 +129,6 @@ public partial class MovementsViewModel : ObservableObject
     public void RegisterExit()
     {
         OpenMovementForm(MovementType.Exit, "Salida de inventario registrada correctamente.");
-    }
-
-    /// <summary>
-    /// Opens the modal form preconfigured for a warehouse transfer.
-    /// </summary>
-    [RelayCommand]
-    public void RegisterTransfer()
-    {
-        OpenMovementForm(MovementType.Transfer, "Traslado entre bodegas registrado correctamente.");
     }
 
     /// <summary>
@@ -179,15 +159,6 @@ public partial class MovementsViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Reapplies history filters when the warehouse filter changes.
-    /// </summary>
-    partial void OnSelectedWarehouseFilterChanged(WarehouseFilterOption? value)
-    {
-        if (!_isUpdatingFilters)
-            ApplyFilters();
-    }
-
-    /// <summary>
     /// Validates date range and loads filtered movement details from <see cref="IInventoryService"/>.
     /// </summary>
     private void ApplyFilters()
@@ -195,6 +166,7 @@ public partial class MovementsViewModel : ObservableObject
         if (FromDate.HasValue && ToDate.HasValue && FromDate.Value.Date > ToDate.Value.Date)
         {
             Movements.Clear();
+            OnPropertyChanged(nameof(HasNoMovements));
             SetErrorStatus(InvalidDateRangeMessage);
             return;
         }
@@ -207,15 +179,21 @@ public partial class MovementsViewModel : ObservableObject
         var filter = new StockMovementFilter(
             FromDate,
             ToDate,
-            SelectedMovementTypeFilter?.Type,
-            SelectedWarehouseFilter?.WarehouseId);
+            SelectedMovementTypeFilter?.Type);
 
         Movements.Clear();
         foreach (var movement in _inventoryService.GetMovementDetails(filter))
         {
             Movements.Add(movement);
         }
+
+        OnPropertyChanged(nameof(HasNoMovements));
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the current filters yielded no movements.
+    /// </summary>
+    public bool HasNoMovements => Movements.Count == 0;
 
     /// <summary>
     /// Validates catalog prerequisites, opens the movement registration modal, and updates status feedback on completion.
@@ -227,19 +205,6 @@ public partial class MovementsViewModel : ObservableObject
         if (!_catalogService.GetAllProducts().Any())
         {
             SetErrorStatus("Debe registrar al menos un producto antes de crear movimientos.");
-            return;
-        }
-
-        var warehousesCount = _catalogService.GetAllWarehouses().Count();
-        if (warehousesCount == 0)
-        {
-            SetErrorStatus("Debe registrar al menos una bodega antes de crear movimientos.");
-            return;
-        }
-
-        if (movementType == MovementType.Transfer && warehousesCount < 2)
-        {
-            SetErrorStatus("Se necesitan al menos dos bodegas registradas para realizar un traslado.");
             return;
         }
 
@@ -276,5 +241,12 @@ public partial class MovementsViewModel : ObservableObject
     {
         IsErrorMessage = true;
         StatusMessage = message;
+    }
+
+    private void OnSettingsChanged(AppSettings settings)
+    {
+        CurrencyCode = settings.CurrencyCode;
+        CurrencySymbol = settings.CurrencySymbol;
+        LoadData();
     }
 }

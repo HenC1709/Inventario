@@ -53,6 +53,14 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
+    /// Retrieves all products linked to the specified supplier identifier.
+    /// </summary>
+    public IEnumerable<Product> GetBySupplierId(int supplierId)
+    {
+        return _context.Products.Where(product => product.SupplierId == supplierId);
+    }
+
+    /// <summary>
     /// Assigns the next sequential identifier, adds the product, and persists changes to JSON.
     /// </summary>
     public void Add(Product product)
@@ -76,6 +84,26 @@ public class ProductRepository : IProductRepository
             _context.Products[index] = product;
             _context.SaveJson();
         }
+    }
+
+    /// <summary>
+    /// Replaces multiple existing products and saves all updates atomically in a single write.
+    /// </summary>
+    public void UpdateRange(IEnumerable<Product> products)
+    {
+        var updated = false;
+        foreach (var product in products)
+        {
+            var index = _context.Products.FindIndex(item => item.Id == product.Id);
+            if (index >= 0)
+            {
+                _context.Products[index] = product;
+                updated = true;
+            }
+        }
+
+        if (updated)
+            _context.SaveJson();
     }
 
     /// <summary>

@@ -9,9 +9,9 @@ namespace TiendaBodegas.Domain.Interfaces;
 public interface IStockMovementRepository : IRepository<StockMovement>
 {
     /// <summary>
-    /// Retrieves all stock movements where the specified warehouse is either the source or destination.
+    /// Retrieves all stock movements associated with the specified product identifier.
     /// </summary>
-    IEnumerable<StockMovement> GetByWarehouseId(int warehouseId);
+    IEnumerable<StockMovement> GetByProductId(int productId);
 
     /// <summary>
     /// Retrieves all stock movements matching the specified movement type.

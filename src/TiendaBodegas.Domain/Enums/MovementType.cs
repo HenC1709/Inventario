@@ -1,9 +1,10 @@
-namespace TiendaBodegas.Domain.Enums
+namespace TiendaBodegas.Domain.Enums;
+
+/// <summary>
+/// Defines the single-warehouse inventory movement types supported by the system.
+/// </summary>
+public enum MovementType
 {
-    public enum MovementType
-    {
-        Entry,
-        Exit,
-        Transfer
-    }
+    Entry,
+    Exit
 }

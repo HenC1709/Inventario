@@ -3,37 +3,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:conv="clr-namespace:TiendaBodegas.UI.Converters"
+             xmlns:enums="clr-namespace:TiendaBodegas.Domain.Enums;assembly=TiendaBodegas.Domain"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="600" d:DesignWidth="980">
     <UserControl.Resources>
-        <Style x:Key="StatusBannerStyle" TargetType="Border">
-            <Setter Property="Background" Value="#DCFCE7" />
-            <Setter Property="BorderBrush" Value="#86EFAC" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Padding" Value="12,8" />
-            <Setter Property="Margin" Value="0,0,0,12" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding StatusMessage}" Value="">
-                    <Setter Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding IsErrorMessage}" Value="True">
-                    <Setter Property="Background" Value="#FEE2E2" />
-                    <Setter Property="BorderBrush" Value="#FCA5A5" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="StatusBannerTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#166534" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsErrorMessage}" Value="True">
-                    <Setter Property="Foreground" Value="#991B1B" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <conv:MovementTitleConverter x:Key="MovementTitleConverter" />
+        <conv:MovementSubtitleConverter x:Key="MovementSubtitleConverter" />
+        <conv:CurrencyAmountConverter x:Key="CurrencyAmountConverter" />
     </UserControl.Resources>
 
     <Grid>
@@ -44,136 +22,153 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
-            <TextBlock DockPanel.Dock="Left"
-                       Text="Historial y registro de movimientos de inventario"
-                       VerticalAlignment="Center"
-                       FontSize="13"
-                       Foreground="#5A6577" />
+        <!-- Cabecera -->
+        <Grid Grid.Row="0" Margin="0,0,0,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="+ Entrada"
-                        Command="{Binding RegisterEntryCommand}"
-                        Padding="14,7"
-                        Margin="0,0,8,0"
-                        Background="#2563EB"
-                        Foreground="#FFFFFF"
-                        BorderThickness="0"
-                        FontWeight="SemiBold"
-                        Cursor="Hand" />
-                <Button Content="- Salida"
-                        Command="{Binding RegisterExitCommand}"
-                        Padding="14,7"
-                        Margin="0,0,8,0"
-                        Background="#F1F5F9"
-                        Foreground="#1E293B"
-                        BorderBrush="#CBD5E1"
-                        BorderThickness="1"
-                        Cursor="Hand" />
-                <Button Content="⇄ Traslado"
-                        Command="{Binding RegisterTransferCommand}"
-                        Padding="14,7"
-                        Background="#F1F5F9"
-                        Foreground="#1E293B"
-                        BorderBrush="#CBD5E1"
-                        BorderThickness="1"
-                        Cursor="Hand" />
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Registro de Ventas y Salidas" Style="{StaticResource PageTitleTextStyle}" />
+                <TextBlock Text="Historial reciente de movimientos de inventario"
+                           Style="{StaticResource PageSubtitleTextStyle}"
+                           Margin="0,3,0,0" />
             </StackPanel>
-        </DockPanel>
 
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="+ Registrar Entrada"
+                        Command="{Binding RegisterEntryCommand}"
+                        Style="{StaticResource SecondaryCoolButtonStyle}"
+                        Margin="0,0,10,0" />
+                <Button Content="+ Registrar Venta / Salida"
+                        Command="{Binding RegisterExitCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Filtros -->
         <Border Grid.Row="1"
-                Background="#F8FAFC"
-                BorderBrush="#E2E8F0"
+                Background="{StaticResource SurfaceWhiteBrush}"
+                BorderBrush="{StaticResource Pearl300Brush}"
                 BorderThickness="1"
-                CornerRadius="6"
+                CornerRadius="12"
                 Padding="12,10"
                 Margin="0,0,0,12">
             <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,14,2">
                     <TextBlock Text="Desde:"
                                VerticalAlignment="Center"
-                               Foreground="#334155"
+                               Foreground="{StaticResource TextSecondaryBrush}"
                                FontSize="13"
                                Margin="0,0,6,0" />
-                    <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}" Width="125" />
+                    <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                                Style="{StaticResource ModernDatePickerStyle}"
+                                Width="130" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,14,2">
                     <TextBlock Text="Hasta:"
                                VerticalAlignment="Center"
-                               Foreground="#334155"
+                               Foreground="{StaticResource TextSecondaryBrush}"
                                FontSize="13"
                                Margin="0,0,6,0" />
-                    <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}" Width="125" />
+                    <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                                Style="{StaticResource ModernDatePickerStyle}"
+                                Width="130" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,14,2">
                     <TextBlock Text="Tipo:"
                                VerticalAlignment="Center"
-                               Foreground="#334155"
+                               Foreground="{StaticResource TextSecondaryBrush}"
                                FontSize="13"
                                Margin="0,0,6,0" />
-                    <ComboBox Width="115"
-                              Padding="8,5"
-                              FontSize="13"
+                    <ComboBox Width="140"
+                              Style="{StaticResource ModernComboBoxStyle}"
                               ItemsSource="{Binding MovementTypeFilters}"
                               SelectedItem="{Binding SelectedMovementTypeFilter, Mode=TwoWay}"
                               DisplayMemberPath="Label" />
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,14,2">
-                    <TextBlock Text="Bodega:"
-                               VerticalAlignment="Center"
-                               Foreground="#334155"
-                               FontSize="13"
-                               Margin="0,0,6,0" />
-                    <ComboBox Width="165"
-                              Padding="8,5"
-                              FontSize="13"
-                              ItemsSource="{Binding WarehouseFilters}"
-                              SelectedItem="{Binding SelectedWarehouseFilter, Mode=TwoWay}"
-                              DisplayMemberPath="Label" />
-                </StackPanel>
-
                 <Button Content="Limpiar"
                         Command="{Binding ClearFiltersCommand}"
+                        Style="{StaticResource SecondaryCoolButtonStyle}"
                         Padding="12,6"
-                        Margin="0,2,0,2"
-                        Background="#FFFFFF"
-                        Foreground="#334155"
-                        BorderBrush="#CBD5E1"
-                        BorderThickness="1"
-                        Cursor="Hand" />
+                        Margin="0,2,0,2" />
             </WrapPanel>
         </Border>
 
-        <Border Grid.Row="2" Style="{StaticResource StatusBannerStyle}">
+        <!-- Banner de estado -->
+        <Border Grid.Row="2" Style="{StaticResource StatusBannerBorderStyle}">
             <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusBannerTextStyle}" />
         </Border>
 
-        <DataGrid Grid.Row="3"
-                  ItemsSource="{Binding Movements}"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  CanUserAddRows="False"
-                  CanUserDeleteRows="False"
-                  SelectionMode="Single"
-                  GridLinesVisibility="Horizontal"
-                  HeadersVisibility="Column"
-                  AlternatingRowBackground="#F8FAFC"
-                  RowHeight="34"
-                  BorderBrush="#D5DCE6"
-                  BorderThickness="1">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="55" />
-                <DataGridTextColumn Header="Fecha" Binding="{Binding Date, StringFormat=dd/MM/yyyy HH:mm}" Width="135" />
-                <DataGridTextColumn Header="Tipo" Binding="{Binding MovementTypeLabel}" Width="85" />
-                <DataGridTextColumn Header="Producto" Binding="{Binding ProductDisplay}" Width="190" />
-                <DataGridTextColumn Header="Cantidad" Binding="{Binding Quantity}" Width="80" />
-                <DataGridTextColumn Header="Bodega Origen" Binding="{Binding SourceWarehouseDisplay}" Width="165" />
-                <DataGridTextColumn Header="Bodega Destino" Binding="{Binding DestinationWarehouseDisplay}" Width="165" />
-                <DataGridTextColumn Header="Observaciones" Binding="{Binding Notes}" Width="*" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- Tarjeta con filas limpias -->
+        <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}" Padding="0">
+            <Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Movements}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource Pearl200Brush}"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="24,16">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Converter={StaticResource MovementTitleConverter}}"
+                                                       FontSize="15"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Converter={StaticResource MovementSubtitleConverter}}"
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       Margin="0,3,0,0"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1"
+                                                   FontSize="16"
+                                                   FontWeight="Bold"
+                                                   VerticalAlignment="Center"
+                                                   Margin="16,0,0,0">
+                                            <TextBlock.Text>
+                                                <MultiBinding Converter="{StaticResource CurrencyAmountConverter}">
+                                                    <Binding Path="TotalAmount" />
+                                                    <Binding Path="DataContext.CurrencyCode" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding MovementType}" Value="{x:Static enums:MovementType.Entry}">
+                                                            <Setter Property="Foreground" Value="{StaticResource Cool600Brush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <TextBlock Text="No hay movimientos registrados con los filtros seleccionados."
+                           Foreground="{StaticResource TextSubtleBrush}"
+                           FontSize="13"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Visibility="{Binding HasNoMovements, Converter={StaticResource BoolToVisibility}}" />
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>
