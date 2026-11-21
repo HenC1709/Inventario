@@ -23,11 +23,11 @@ public class DialogService : IDialogService
     }
 
     /// <summary>
-    /// Opens <see cref="WarehouseFormWindow"/> modally over the main window.
+    /// Opens <see cref="SupplierFormWindow"/> modally over the main window.
     /// </summary>
-    public bool ShowWarehouseForm(WarehouseFormViewModel viewModel)
+    public bool ShowSupplierForm(SupplierFormViewModel viewModel)
     {
-        var window = new WarehouseFormWindow(viewModel)
+        var window = new SupplierFormWindow(viewModel)
         {
             Owner = System.Windows.Application.Current?.MainWindow
         };

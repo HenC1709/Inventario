@@ -124,7 +124,7 @@ public partial class ProductsViewModel : ObservableObject
     private bool HasSelectedProduct() => SelectedProduct != null;
 
     /// <summary>
-    /// Filters the cached product list by name or SKU (case-insensitive).
+    /// Filters the cached product list by name, SKU, or category (case-insensitive).
     /// </summary>
     private void ApplyFilter()
     {
@@ -133,7 +133,8 @@ public partial class ProductsViewModel : ObservableObject
             ? _allProducts
             : _allProducts.Where(product =>
                 product.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                product.SKU.Contains(term, StringComparison.OrdinalIgnoreCase));
+                product.SKU.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                product.Category.Contains(term, StringComparison.OrdinalIgnoreCase));
 
         Products.Clear();
         foreach (var product in filtered)

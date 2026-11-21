@@ -13,9 +13,9 @@ public interface IDialogService
     bool ShowProductForm(ProductFormViewModel viewModel);
 
     /// <summary>
-    /// Opens the modal warehouse form and returns whether the user saved changes.
+    /// Opens the modal supplier form and returns whether the user saved changes.
     /// </summary>
-    bool ShowWarehouseForm(WarehouseFormViewModel viewModel);
+    bool ShowSupplierForm(SupplierFormViewModel viewModel);
 
     /// <summary>
     /// Opens the modal movement registration form and returns whether the user registered a movement.

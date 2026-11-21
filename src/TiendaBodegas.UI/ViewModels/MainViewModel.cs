@@ -8,7 +8,7 @@ namespace TiendaBodegas.UI.ViewModels;
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
-    private readonly WarehousesViewModel _warehousesViewModel;
+    private readonly SuppliersViewModel _suppliersViewModel;
     private readonly ProductsViewModel _productsViewModel;
     private readonly StockViewModel _stockViewModel;
     private readonly MovementsViewModel _movementsViewModel;
@@ -17,33 +17,33 @@ public partial class MainViewModel : ObservableObject
     private object _currentViewModel;
 
     [ObservableProperty]
-    private string _currentSectionTitle = "Bodegas";
+    private string _currentSectionTitle = "Proveedores";
 
     /// <summary>
-    /// Initializes a new instance of <see cref="MainViewModel"/> with the warehouses section active.
+    /// Initializes a new instance of <see cref="MainViewModel"/> with the suppliers section active.
     /// </summary>
     public MainViewModel(
-        WarehousesViewModel warehousesViewModel,
+        SuppliersViewModel suppliersViewModel,
         ProductsViewModel productsViewModel,
         StockViewModel stockViewModel,
         MovementsViewModel movementsViewModel)
     {
-        _warehousesViewModel = warehousesViewModel;
+        _suppliersViewModel = suppliersViewModel;
         _productsViewModel = productsViewModel;
         _stockViewModel = stockViewModel;
         _movementsViewModel = movementsViewModel;
-        _currentViewModel = _warehousesViewModel;
+        _currentViewModel = _suppliersViewModel;
     }
 
     /// <summary>
-    /// Navigates to the Warehouses section and refreshes its data.
+    /// Navigates to the Suppliers section and refreshes its data.
     /// </summary>
     [RelayCommand]
-    public void ShowWarehouses()
+    public void ShowSuppliers()
     {
-        _warehousesViewModel.LoadData();
-        CurrentViewModel = _warehousesViewModel;
-        CurrentSectionTitle = "Bodegas";
+        _suppliersViewModel.LoadData();
+        CurrentViewModel = _suppliersViewModel;
+        CurrentSectionTitle = "Proveedores";
     }
 
     /// <summary>
@@ -58,14 +58,14 @@ public partial class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Navigates to the Stock by Warehouse section and refreshes stock balances and alerts.
+    /// Navigates to the global Stock section and refreshes stock balances and alerts.
     /// </summary>
     [RelayCommand]
     public void ShowStock()
     {
         _stockViewModel.LoadData();
         CurrentViewModel = _stockViewModel;
-        CurrentSectionTitle = "Stock por Bodega";
+        CurrentSectionTitle = "Stock";
     }
 
     /// <summary>

@@ -1,0 +1,67 @@
+<Window x:Class="TiendaBodegas.UI.Views.SupplierFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}"
+        Width="460"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{StaticResource Pearl50Brush}"
+        FocusManager.FocusedElement="{Binding ElementName=NameTextBox}">
+    <StackPanel Margin="24">
+        <TextBlock Text="{Binding Title}"
+                   FontSize="18"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}"
+                   Margin="0,0,0,16" />
+
+        <TextBlock Text="CÓDIGO (OPCIONAL)" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,4" />
+        <TextBox Text="{Binding Code, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                 Tag="Ej. PRV-01 (automático si se deja vacío)"
+                 Style="{StaticResource ModernTextBoxStyle}" />
+        <TextBlock Text="{Binding CodeError}" Style="{StaticResource FieldErrorTextStyle}" />
+
+        <TextBlock Text="RAZÓN SOCIAL *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
+        <TextBox x:Name="NameTextBox"
+                 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                 Tag="Ej. Distribuidora del Norte S.A."
+                 Style="{StaticResource ModernTextBoxStyle}" />
+        <TextBlock Text="{Binding NameError}" Style="{StaticResource FieldErrorTextStyle}" />
+
+        <TextBlock Text="CONTACTO *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
+        <TextBox Text="{Binding Contact, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                 Tag="Ej. contacto@distnorte.com"
+                 Style="{StaticResource ModernTextBoxStyle}" />
+        <TextBlock Text="{Binding ContactError}" Style="{StaticResource FieldErrorTextStyle}" />
+
+        <TextBlock Text="CATEGORÍA PRINCIPAL *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
+        <TextBox Text="{Binding MainCategory, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                 Tag="Ej. Alimentos"
+                 Style="{StaticResource ModernTextBoxStyle}" />
+        <TextBlock Text="{Binding MainCategoryError}" Style="{StaticResource FieldErrorTextStyle}" />
+
+        <TextBlock Text="ESTADO *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
+        <ComboBox ItemsSource="{Binding StatusOptions}"
+                  SelectedValue="{Binding SelectedStatus, Mode=TwoWay}"
+                  SelectedValuePath="Status"
+                  DisplayMemberPath="Label"
+                  Style="{StaticResource ModernComboBoxStyle}" />
+
+        <TextBlock Text="{Binding FormError}"
+                   Margin="0,12,0,0"
+                   Style="{StaticResource FieldErrorTextStyle}" />
+
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,20,0,0">
+            <Button Content="Cancelar"
+                    Command="{Binding CancelCommand}"
+                    Style="{StaticResource NeutralButtonStyle}"
+                    Margin="0,0,10,0" />
+            <Button Content="Guardar"
+                    Command="{Binding SaveCommand}"
+                    IsDefault="True"
+                    Style="{StaticResource PrimaryButtonStyle}" />
+        </StackPanel>
+    </StackPanel>
+</Window>

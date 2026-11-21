@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -21,7 +22,16 @@ public partial class ProductFormViewModel : ValidatableViewModel
     private string _sku = string.Empty;
 
     [ObservableProperty]
-    private string _priceText = string.Empty;
+    private string _category = string.Empty;
+
+    [ObservableProperty]
+    private Supplier? _selectedSupplier;
+
+    [ObservableProperty]
+    private string _purchasePriceText = "0";
+
+    [ObservableProperty]
+    private string _salePriceText = string.Empty;
 
     [ObservableProperty]
     private string _minStockText = "0";
@@ -33,13 +43,24 @@ public partial class ProductFormViewModel : ValidatableViewModel
     private string _skuError = string.Empty;
 
     [ObservableProperty]
-    private string _priceError = string.Empty;
+    private string _categoryError = string.Empty;
+
+    [ObservableProperty]
+    private string _purchasePriceError = string.Empty;
+
+    [ObservableProperty]
+    private string _salePriceError = string.Empty;
 
     [ObservableProperty]
     private string _minStockError = string.Empty;
 
     [ObservableProperty]
     private string _formError = string.Empty;
+
+    /// <summary>
+    /// Gets the list of available suppliers for selection.
+    /// </summary>
+    public ObservableCollection<Supplier> Suppliers { get; } = new();
 
     /// <summary>
     /// Gets the dialog window title reflecting create or edit mode.
@@ -58,18 +79,29 @@ public partial class ProductFormViewModel : ValidatableViewModel
     {
         _catalogService = catalogService;
 
+        foreach (var supplier in catalogService.GetAllSuppliers())
+        {
+            Suppliers.Add(supplier);
+        }
+
         if (productToEdit != null)
         {
             _editingProductId = productToEdit.Id;
             Title = "Editar Producto";
             _name = productToEdit.Name;
             _sku = productToEdit.SKU;
-            _priceText = productToEdit.Price.ToString("0.##", CultureInfo.InvariantCulture);
+            _category = productToEdit.Category;
+            _selectedSupplier = productToEdit.SupplierId.HasValue
+                ? Suppliers.FirstOrDefault(s => s.Id == productToEdit.SupplierId.Value)
+                : null;
+            _purchasePriceText = productToEdit.PurchasePrice.ToString("0.##", CultureInfo.InvariantCulture);
+            _salePriceText = productToEdit.SalePrice.ToString("0.##", CultureInfo.InvariantCulture);
             _minStockText = productToEdit.MinStock.ToString(CultureInfo.InvariantCulture);
         }
         else
         {
             Title = "Nuevo Producto";
+            _selectedSupplier = Suppliers.FirstOrDefault();
         }
     }
 
@@ -84,9 +116,19 @@ public partial class ProductFormViewModel : ValidatableViewModel
     partial void OnSkuChanged(string value) => ValidateSku();
 
     /// <summary>
-    /// Revalidates the price text whenever it changes.
+    /// Revalidates the product category whenever it changes.
     /// </summary>
-    partial void OnPriceTextChanged(string value) => ValidatePrice();
+    partial void OnCategoryChanged(string value) => ValidateCategory();
+
+    /// <summary>
+    /// Revalidates the purchase price text whenever it changes.
+    /// </summary>
+    partial void OnPurchasePriceTextChanged(string value) => ValidatePurchasePrice();
+
+    /// <summary>
+    /// Revalidates the sale price text whenever it changes.
+    /// </summary>
+    partial void OnSalePriceTextChanged(string value) => ValidateSalePrice();
 
     /// <summary>
     /// Revalidates the minimum stock text whenever it changes.
@@ -103,7 +145,8 @@ public partial class ProductFormViewModel : ValidatableViewModel
         ValidateAll();
 
         if (HasErrors
-            || !TryParsePositivePrice(PriceText, out var price)
+            || !TryParseNonNegativeDecimal(PurchasePriceText, out var purchasePrice)
+            || !TryParsePositiveDecimal(SalePriceText, out var salePrice)
             || !TryParseNonNegativeInt(MinStockText, out var minStock))
             return;
 
@@ -111,11 +154,26 @@ public partial class ProductFormViewModel : ValidatableViewModel
         {
             if (_editingProductId.HasValue)
             {
-                _catalogService.UpdateProduct(_editingProductId.Value, Name, Sku, price, minStock);
+                _catalogService.UpdateProduct(
+                    _editingProductId.Value,
+                    Name,
+                    Sku,
+                    Category,
+                    SelectedSupplier?.Id,
+                    purchasePrice,
+                    salePrice,
+                    minStock);
             }
             else
             {
-                _catalogService.CreateProduct(Name, Sku, price, minStock);
+                _catalogService.CreateProduct(
+                    Name,
+                    Sku,
+                    Category,
+                    SelectedSupplier?.Id,
+                    purchasePrice,
+                    salePrice,
+                    minStock);
             }
 
             RequestClose?.Invoke(true);
@@ -142,7 +200,9 @@ public partial class ProductFormViewModel : ValidatableViewModel
     {
         ValidateName();
         ValidateSku();
-        ValidatePrice();
+        ValidateCategory();
+        ValidatePurchasePrice();
+        ValidateSalePrice();
         ValidateMinStock();
     }
 
@@ -183,16 +243,42 @@ public partial class ProductFormViewModel : ValidatableViewModel
     }
 
     /// <summary>
-    /// Validates that the price parses as a positive decimal number.
+    /// Validates that the product category is non-empty.
     /// </summary>
-    private void ValidatePrice()
+    private void ValidateCategory()
     {
-        var error = TryParsePositivePrice(PriceText, out _)
-            ? string.Empty
-            : "Ingrese un precio válido mayor a 0.";
+        var error = string.IsNullOrWhiteSpace(Category)
+            ? "La categoría es obligatoria."
+            : string.Empty;
 
-        PriceError = error;
-        SetPropertyError(nameof(PriceText), error);
+        CategoryError = error;
+        SetPropertyError(nameof(Category), error);
+    }
+
+    /// <summary>
+    /// Validates that the purchase price parses as a non-negative decimal number.
+    /// </summary>
+    private void ValidatePurchasePrice()
+    {
+        var error = TryParseNonNegativeDecimal(PurchasePriceText, out _)
+            ? string.Empty
+            : "Ingrese un precio de compra válido mayor o igual a 0.";
+
+        PurchasePriceError = error;
+        SetPropertyError(nameof(PurchasePriceText), error);
+    }
+
+    /// <summary>
+    /// Validates that the sale price parses as a strictly positive decimal number.
+    /// </summary>
+    private void ValidateSalePrice()
+    {
+        var error = TryParsePositiveDecimal(SalePriceText, out _)
+            ? string.Empty
+            : "Ingrese un precio de venta válido mayor a 0.";
+
+        SalePriceError = error;
+        SetPropertyError(nameof(SalePriceText), error);
     }
 
     /// <summary>
@@ -209,11 +295,11 @@ public partial class ProductFormViewModel : ValidatableViewModel
     }
 
     /// <summary>
-    /// Parses a decimal price supporting dot or comma decimal separators and checks that it is strictly positive.
+    /// Parses a decimal value supporting dot or comma decimal separators and checks that it is non-negative.
     /// </summary>
-    private static bool TryParsePositivePrice(string? text, out decimal price)
+    private static bool TryParseNonNegativeDecimal(string? text, out decimal value)
     {
-        price = 0m;
+        value = 0m;
         if (string.IsNullOrWhiteSpace(text))
             return false;
 
@@ -224,8 +310,16 @@ public partial class ProductFormViewModel : ValidatableViewModel
         if (hasComma && !hasDot)
             trimmed = trimmed.Replace(',', '.');
 
-        return decimal.TryParse(trimmed, NumberStyles.Number, CultureInfo.InvariantCulture, out price)
-            && price > 0m;
+        return decimal.TryParse(trimmed, NumberStyles.Number, CultureInfo.InvariantCulture, out value)
+            && value >= 0m;
+    }
+
+    /// <summary>
+    /// Parses a decimal value supporting dot or comma decimal separators and checks that it is strictly positive.
+    /// </summary>
+    private static bool TryParsePositiveDecimal(string? text, out decimal value)
+    {
+        return TryParseNonNegativeDecimal(text, out value) && value > 0m;
     }
 
     /// <summary>

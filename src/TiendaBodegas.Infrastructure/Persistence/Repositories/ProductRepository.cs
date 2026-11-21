@@ -53,6 +53,14 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
+    /// Retrieves all products linked to the specified supplier identifier.
+    /// </summary>
+    public IEnumerable<Product> GetBySupplierId(int supplierId)
+    {
+        return _context.Products.Where(product => product.SupplierId == supplierId);
+    }
+
+    /// <summary>
     /// Assigns the next sequential identifier, adds the product, and persists changes to JSON.
     /// </summary>
     public void Add(Product product)

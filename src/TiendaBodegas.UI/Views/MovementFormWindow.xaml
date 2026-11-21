@@ -2,55 +2,19 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding Title}"
-        Width="480"
+        Width="460"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#FFFFFF">
+        Background="{StaticResource Pearl50Brush}">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
-        <Style x:Key="ErrorTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#DC2626" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Margin" Value="0,4,0,0" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Style.Triggers>
-                <Trigger Property="Text" Value="">
-                    <Setter Property="Visibility" Value="Collapsed" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="FormInputStyle" TargetType="TextBox">
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="BorderBrush" Value="#CBD5E1" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Style.Triggers>
-                <Trigger Property="Validation.HasError" Value="True">
-                    <Setter Property="BorderBrush" Value="#DC2626" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="FormComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="BorderBrush" Value="#CBD5E1" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Style.Triggers>
-                <Trigger Property="Validation.HasError" Value="True">
-                    <Setter Property="BorderBrush" Value="#DC2626" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
         <Style x:Key="FormErrorBannerStyle" TargetType="Border">
-            <Setter Property="Background" Value="#FEE2E2" />
-            <Setter Property="BorderBrush" Value="#FCA5A5" />
+            <Setter Property="Background" Value="{StaticResource DangerBgBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DangerBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="10,8" />
             <Setter Property="Margin" Value="0,12,0,0" />
             <Style.Triggers>
@@ -64,21 +28,21 @@
     <StackPanel Margin="24">
         <TextBlock Text="{Binding Title}"
                    FontSize="18"
-                   FontWeight="SemiBold"
-                   Foreground="#0F172A"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}"
                    Margin="0,0,0,16" />
 
-        <TextBlock Text="Tipo de movimiento *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,0,0,4" />
+        <TextBlock Text="TIPO DE MOVIMIENTO *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,4" />
         <ComboBox ItemsSource="{Binding MovementTypes}"
                   SelectedValue="{Binding SelectedMovementType, Mode=TwoWay}"
                   SelectedValuePath="Type"
                   DisplayMemberPath="Label"
-                  Style="{StaticResource FormComboBoxStyle}" />
+                  Style="{StaticResource ModernComboBoxStyle}" />
 
-        <TextBlock Text="Producto *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,12,0,4" />
+        <TextBlock Text="PRODUCTO *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
         <ComboBox ItemsSource="{Binding Products}"
                   SelectedItem="{Binding SelectedProduct, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}"
-                  Style="{StaticResource FormComboBoxStyle}">
+                  Style="{StaticResource ModernComboBoxStyle}">
             <ComboBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock>
@@ -89,52 +53,35 @@
                 </DataTemplate>
             </ComboBox.ItemTemplate>
         </ComboBox>
-        <TextBlock Text="{Binding ProductError}" Style="{StaticResource ErrorTextStyle}" />
+        <TextBlock Text="{Binding ProductError}" Style="{StaticResource FieldErrorTextStyle}" />
 
-        <StackPanel Visibility="{Binding RequiresSourceWarehouse, Converter={StaticResource BoolToVisibility}}"
-                    Margin="0,12,0,0">
-            <TextBlock Text="Bodega de origen *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,0,0,4" />
-            <ComboBox ItemsSource="{Binding Warehouses}"
-                      SelectedItem="{Binding SelectedSourceWarehouse, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}"
-                      DisplayMemberPath="Name"
-                      Style="{StaticResource FormComboBoxStyle}" />
-            <TextBlock Text="{Binding SourceWarehouseError}" Style="{StaticResource ErrorTextStyle}" />
-            <Border Background="#F1F5F9"
-                    BorderBrush="#CBD5E1"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    Padding="10,6"
-                    Margin="0,6,0,0"
-                    Visibility="{Binding ShowAvailableStock, Converter={StaticResource BoolToVisibility}}">
-                <TextBlock FontSize="12" Foreground="#334155">
-                    <Run Text="Stock disponible en bodega origen: " />
-                    <Run Text="{Binding AvailableSourceStock, Mode=OneWay}" FontWeight="SemiBold" />
-                </TextBlock>
-            </Border>
-        </StackPanel>
+        <Border Background="{StaticResource Cool50Brush}"
+                BorderBrush="{StaticResource Cool200Brush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="10,6"
+                Margin="0,8,0,0"
+                Visibility="{Binding ShowAvailableStock, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock FontSize="12" Foreground="{StaticResource Cool700Brush}">
+                <Run Text="Stock disponible actual: " />
+                <Run Text="{Binding AvailableStock, Mode=OneWay}" FontWeight="Bold" />
+            </TextBlock>
+        </Border>
 
-        <StackPanel Visibility="{Binding RequiresDestinationWarehouse, Converter={StaticResource BoolToVisibility}}"
-                    Margin="0,12,0,0">
-            <TextBlock Text="Bodega de destino *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,0,0,4" />
-            <ComboBox ItemsSource="{Binding Warehouses}"
-                      SelectedItem="{Binding SelectedDestinationWarehouse, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}"
-                      DisplayMemberPath="Name"
-                      Style="{StaticResource FormComboBoxStyle}" />
-            <TextBlock Text="{Binding DestinationWarehouseError}" Style="{StaticResource ErrorTextStyle}" />
-        </StackPanel>
-
-        <TextBlock Text="Cantidad *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,12,0,4" />
+        <TextBlock Text="CANTIDAD *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
         <TextBox Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                 Style="{StaticResource FormInputStyle}" />
-        <TextBlock Text="{Binding QuantityError}" Style="{StaticResource ErrorTextStyle}" />
+                 Tag="Ej. 10"
+                 Style="{StaticResource ModernTextBoxStyle}" />
+        <TextBlock Text="{Binding QuantityError}" Style="{StaticResource FieldErrorTextStyle}" />
 
-        <TextBlock Text="Observaciones" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,12,0,4" />
+        <TextBlock Text="OBSERVACIONES" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
         <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
-                 Style="{StaticResource FormInputStyle}" />
+                 Tag="Ej. Orden de reposición o nota de venta"
+                 Style="{StaticResource ModernTextBoxStyle}" />
 
         <Border Style="{StaticResource FormErrorBannerStyle}">
             <TextBlock Text="{Binding FormError}"
-                       Foreground="#991B1B"
+                       Foreground="{StaticResource DangerTextBrush}"
                        FontSize="12"
                        TextWrapping="Wrap" />
         </Border>
@@ -144,22 +91,12 @@
                     Margin="0,20,0,0">
             <Button Content="Cancelar"
                     Command="{Binding CancelCommand}"
-                    Padding="16,8"
-                    Margin="0,0,10,0"
-                    Background="#F1F5F9"
-                    Foreground="#334155"
-                    BorderBrush="#CBD5E1"
-                    BorderThickness="1"
-                    Cursor="Hand" />
+                    Style="{StaticResource NeutralButtonStyle}"
+                    Margin="0,0,10,0" />
             <Button Content="Registrar"
                     Command="{Binding SaveCommand}"
                     IsDefault="True"
-                    Padding="18,8"
-                    Background="#2563EB"
-                    Foreground="#FFFFFF"
-                    BorderThickness="0"
-                    FontWeight="SemiBold"
-                    Cursor="Hand" />
+                    Style="{StaticResource PrimaryButtonStyle}" />
         </StackPanel>
     </StackPanel>
 </Window>

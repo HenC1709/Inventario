@@ -2,91 +2,102 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding Title}"
-        Width="440"
+        Width="480"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#FFFFFF"
+        Background="{StaticResource Pearl50Brush}"
         FocusManager.FocusedElement="{Binding ElementName=NameTextBox}">
-    <Window.Resources>
-        <Style x:Key="ErrorTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#DC2626" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Margin" Value="0,4,0,0" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Style.Triggers>
-                <Trigger Property="Text" Value="">
-                    <Setter Property="Visibility" Value="Collapsed" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="FormInputStyle" TargetType="TextBox">
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="BorderBrush" Value="#CBD5E1" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Style.Triggers>
-                <Trigger Property="Validation.HasError" Value="True">
-                    <Setter Property="BorderBrush" Value="#DC2626" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-    </Window.Resources>
-
     <StackPanel Margin="24">
         <TextBlock Text="{Binding Title}"
                    FontSize="18"
-                   FontWeight="SemiBold"
-                   Foreground="#0F172A"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}"
                    Margin="0,0,0,16" />
 
-        <TextBlock Text="Nombre *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,0,0,4" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="SKU *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,4" />
+                <TextBox Text="{Binding Sku, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                         Tag="Ej. SKU-10482"
+                         Style="{StaticResource ModernTextBoxStyle}" />
+                <TextBlock Text="{Binding SkuError}" Style="{StaticResource FieldErrorTextStyle}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="CATEGORÍA *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,4" />
+                <TextBox Text="{Binding Category, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                         Tag="Ej. Alimentos"
+                         Style="{StaticResource ModernTextBoxStyle}" />
+                <TextBlock Text="{Binding CategoryError}" Style="{StaticResource FieldErrorTextStyle}" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Text="NOMBRE DEL PRODUCTO *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
         <TextBox x:Name="NameTextBox"
                  Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                 Style="{StaticResource FormInputStyle}" />
-        <TextBlock Text="{Binding NameError}" Style="{StaticResource ErrorTextStyle}" />
+                 Tag="Ej. Café Espresso Molido 1kg"
+                 Style="{StaticResource ModernTextBoxStyle}" />
+        <TextBlock Text="{Binding NameError}" Style="{StaticResource FieldErrorTextStyle}" />
 
-        <TextBlock Text="SKU *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,12,0,4" />
-        <TextBox Text="{Binding Sku, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                 Style="{StaticResource FormInputStyle}" />
-        <TextBlock Text="{Binding SkuError}" Style="{StaticResource ErrorTextStyle}" />
+        <TextBlock Text="PROVEEDOR" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
+        <ComboBox ItemsSource="{Binding Suppliers}"
+                  SelectedItem="{Binding SelectedSupplier, Mode=TwoWay}"
+                  DisplayMemberPath="Name"
+                  Style="{StaticResource ModernComboBoxStyle}" />
 
-        <TextBlock Text="Precio *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,12,0,4" />
-        <TextBox Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                 Style="{StaticResource FormInputStyle}" />
-        <TextBlock Text="{Binding PriceError}" Style="{StaticResource ErrorTextStyle}" />
+        <Grid Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <TextBlock Text="Stock mínimo *" FontSize="13" FontWeight="Medium" Foreground="#334155" Margin="0,12,0,4" />
-        <TextBox Text="{Binding MinStockText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                 Style="{StaticResource FormInputStyle}" />
-        <TextBlock Text="{Binding MinStockError}" Style="{StaticResource ErrorTextStyle}" />
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="PRECIO COMPRA *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,4" />
+                <TextBox Text="{Binding PurchasePriceText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                         Style="{StaticResource ModernTextBoxStyle}" />
+                <TextBlock Text="{Binding PurchasePriceError}" Style="{StaticResource FieldErrorTextStyle}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="PRECIO VENTA *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,4" />
+                <TextBox Text="{Binding SalePriceText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                         Style="{StaticResource ModernTextBoxStyle}" />
+                <TextBlock Text="{Binding SalePriceError}" Style="{StaticResource FieldErrorTextStyle}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="4">
+                <TextBlock Text="STOCK MÍNIMO *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,4" />
+                <TextBox Text="{Binding MinStockText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                         Style="{StaticResource ModernTextBoxStyle}" />
+                <TextBlock Text="{Binding MinStockError}" Style="{StaticResource FieldErrorTextStyle}" />
+            </StackPanel>
+        </Grid>
 
         <TextBlock Text="{Binding FormError}"
                    Margin="0,12,0,0"
-                   Style="{StaticResource ErrorTextStyle}" />
+                   Style="{StaticResource FieldErrorTextStyle}" />
 
         <StackPanel Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,20,0,0">
             <Button Content="Cancelar"
                     Command="{Binding CancelCommand}"
-                    Padding="16,8"
-                    Margin="0,0,10,0"
-                    Background="#F1F5F9"
-                    Foreground="#334155"
-                    BorderBrush="#CBD5E1"
-                    BorderThickness="1"
-                    Cursor="Hand" />
-            <Button Content="Guardar"
+                    Style="{StaticResource NeutralButtonStyle}"
+                    Margin="0,0,10,0" />
+            <Button Content="Guardar Producto"
                     Command="{Binding SaveCommand}"
                     IsDefault="True"
-                    Padding="18,8"
-                    Background="#2563EB"
-                    Foreground="#FFFFFF"
-                    BorderThickness="0"
-                    FontWeight="SemiBold"
-                    Cursor="Hand" />
+                    Style="{StaticResource PrimaryButtonStyle}" />
         </StackPanel>
     </StackPanel>
 </Window>
