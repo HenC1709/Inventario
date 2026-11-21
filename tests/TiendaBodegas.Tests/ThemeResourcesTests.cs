@@ -2,6 +2,7 @@ using System.IO.Packaging;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using TiendaBodegas.UI;
 using TiendaBodegas.UI.ViewModels;
 using Xunit;
@@ -113,6 +114,43 @@ public class ThemeResourcesTests
                 var contentSite = Assert.IsType<ContentPresenter>(comboBox.Template.FindName("ContentSite", comboBox));
                 Assert.NotNull(comboBox.ItemTemplateSelector);
                 Assert.Same(comboBox.ItemTemplateSelector, contentSite.ContentTemplateSelector);
+            }
+            catch (Exception ex)
+            {
+                threadException = ex;
+            }
+        });
+
+        staThread.SetApartmentState(ApartmentState.STA);
+        staThread.Start();
+        staThread.Join();
+
+        if (threadException != null)
+            throw threadException;
+    }
+
+    /// <summary>
+    /// Verifies that the application icon asset resolves and decodes cleanly via its Pack URI.
+    /// </summary>
+    [Fact]
+    public void ApplicationIcon_LoadsViaPackUri_WithValidDimensions()
+    {
+        Exception? threadException = null;
+
+        var staThread = new Thread(() =>
+        {
+            try
+            {
+                if (!UriParser.IsKnownScheme("pack"))
+                    _ = PackUriHelper.UriSchemePack;
+
+                System.Windows.Application.ResourceAssembly ??= typeof(App).Assembly;
+
+                var iconUri = new Uri("pack://application:,,,/TiendaBodegas.UI;component/Assets/Inventory.ico", UriKind.Absolute);
+                var frame = BitmapFrame.Create(iconUri);
+
+                Assert.True(frame.PixelWidth > 0);
+                Assert.True(frame.PixelHeight > 0);
             }
             catch (Exception ex)
             {

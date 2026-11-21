@@ -42,7 +42,7 @@ public class Mvp2CrudViewModelsTests : IDisposable
         var supplier = _catalogManager.CreateSupplier("Distribuidora Norte", "contacto@norte.com", "Alimentos");
         _catalogManager.CreateProduct("Existente", "SKU-EXIST", "Alimentos", supplier.Id, 6m, 10m);
 
-        var form = new ProductFormViewModel(_catalogManager);
+        var form = new ProductFormViewModel(_catalogManager, _inventoryManager);
         bool? closeResult = null;
         form.RequestClose += result => closeResult = result;
 
@@ -51,6 +51,7 @@ public class Mvp2CrudViewModelsTests : IDisposable
         form.Category = "";
         form.PurchasePriceText = "-1";
         form.SalePriceText = "0";
+        form.StockText = "-2";
         form.MinStockText = "-5";
         form.SaveCommand.Execute(null);
 
@@ -60,6 +61,7 @@ public class Mvp2CrudViewModelsTests : IDisposable
         Assert.NotEmpty(form.GetErrors(nameof(ProductFormViewModel.Category)).Cast<string>());
         Assert.NotEmpty(form.GetErrors(nameof(ProductFormViewModel.PurchasePriceText)).Cast<string>());
         Assert.NotEmpty(form.GetErrors(nameof(ProductFormViewModel.SalePriceText)).Cast<string>());
+        Assert.NotEmpty(form.GetErrors(nameof(ProductFormViewModel.StockText)).Cast<string>());
         Assert.NotEmpty(form.GetErrors(nameof(ProductFormViewModel.MinStockText)).Cast<string>());
         Assert.Null(closeResult);
 
@@ -69,18 +71,19 @@ public class Mvp2CrudViewModelsTests : IDisposable
         form.SelectedSupplier = supplier;
         form.PurchasePriceText = "9.50";
         form.SalePriceText = "15.50";
+        form.StockText = "20";
         form.MinStockText = "12";
         form.SaveCommand.Execute(null);
 
         Assert.False(form.HasErrors);
         Assert.True(closeResult);
-        Assert.Contains(_catalogManager.GetAllProducts(), p =>
-            p.SKU == "SKU-NEW"
-            && p.Category == "Alimentos"
-            && p.SupplierId == supplier.Id
-            && p.PurchasePrice == 9.50m
-            && p.SalePrice == 15.50m
-            && p.MinStock == 12);
+        var saved = Assert.Single(_catalogManager.GetAllProducts(), p => p.SKU == "SKU-NEW");
+        Assert.Equal("Alimentos", saved.Category);
+        Assert.Equal(supplier.Id, saved.SupplierId);
+        Assert.Equal(9.50m, saved.PurchasePrice);
+        Assert.Equal(15.50m, saved.SalePrice);
+        Assert.Equal(12, saved.MinStock);
+        Assert.Equal(20, _inventoryManager.GetTotalStockByProduct(saved.Id));
     }
 
     /// <summary>
@@ -124,30 +127,29 @@ public class Mvp2CrudViewModelsTests : IDisposable
     /// Verifies search filtering by name/SKU/category and non-crashing error feedback when deleting a product with movements.
     /// </summary>
     [Fact]
-    public void ProductsViewModel_FiltersByNameSkuOrCategory_AndShowsErrorWhenDeletingUsedProduct()
+    public void InventoryViewModel_FiltersByNameSkuOrCategory_AndShowsErrorWhenDeletingUsedProduct()
     {
         var supplier = _catalogManager.CreateSupplier("Distribuidora Norte", "contacto@norte.com", "Alimentos");
         var rice = _catalogManager.CreateProduct("Arroz Extra", "ARR-001", "Alimentos", supplier.Id, 1.50m, 2.50m);
-        var oil = _catalogManager.CreateProduct("Detergente 3L", "DET-002", "Limpieza", supplier.Id, 2.80m, 4.00m);
+        var detergent = _catalogManager.CreateProduct("Detergente 3L", "DET-002", "Limpieza", supplier.Id, 2.80m, 4.00m);
         _inventoryManager.RegisterEntry(rice.Id, 10, "Ingreso");
 
         var dialogStub = new StubDialogService { ConfirmResult = true };
-        var viewModel = new ProductsViewModel(_catalogManager, dialogStub);
+        var viewModel = new InventoryViewModel(_catalogManager, _inventoryManager, new InventoryCsvExporter(), dialogStub);
 
         viewModel.SearchText = "DET-002";
-        var filteredBySku = Assert.Single(viewModel.Products);
-        Assert.Equal(oil.Id, filteredBySku.Id);
+        var filteredBySku = Assert.Single(viewModel.PagedItems);
+        Assert.Equal(detergent.Id, filteredBySku.ProductId);
 
         viewModel.SearchText = "Limpieza";
-        var filteredByCategory = Assert.Single(viewModel.Products);
-        Assert.Equal(oil.Id, filteredByCategory.Id);
+        var filteredByCategory = Assert.Single(viewModel.PagedItems);
+        Assert.Equal(detergent.Id, filteredByCategory.ProductId);
 
         viewModel.SearchText = "arroz";
-        var filteredByName = Assert.Single(viewModel.Products);
-        Assert.Equal(rice.Id, filteredByName.Id);
+        var filteredByName = Assert.Single(viewModel.PagedItems);
+        Assert.Equal(rice.Id, filteredByName.ProductId);
 
-        viewModel.SelectedProduct = rice;
-        viewModel.DeleteProductCommand.Execute(null);
+        viewModel.DeleteProductByItemCommand.Execute(filteredByName);
 
         Assert.True(viewModel.IsErrorMessage);
         Assert.False(string.IsNullOrWhiteSpace(viewModel.StatusMessage));
@@ -194,29 +196,11 @@ public class Mvp2CrudViewModelsTests : IDisposable
     /// </summary>
     private sealed class StubDialogService : IDialogService
     {
-        /// <summary>
-        /// Gets or sets the result returned by <see cref="Confirm"/>.
-        /// </summary>
         public bool ConfirmResult { get; set; }
-
-        /// <summary>
-        /// Returns false without displaying a modal window.
-        /// </summary>
         public bool ShowProductForm(ProductFormViewModel viewModel) => false;
-
-        /// <summary>
-        /// Returns false without displaying a modal window.
-        /// </summary>
         public bool ShowSupplierForm(SupplierFormViewModel viewModel) => false;
-
-        /// <summary>
-        /// Returns false without displaying a modal window.
-        /// </summary>
         public bool ShowMovementForm(MovementFormViewModel viewModel) => false;
-
-        /// <summary>
-        /// Returns <see cref="ConfirmResult"/> without displaying a message box.
-        /// </summary>
         public bool Confirm(string message, string title) => ConfirmResult;
+        public string? ShowSaveFileDialog(string defaultFileName, string filter) => null;
     }
 }

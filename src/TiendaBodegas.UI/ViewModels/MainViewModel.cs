@@ -4,78 +4,147 @@ using CommunityToolkit.Mvvm.Input;
 namespace TiendaBodegas.UI.ViewModels;
 
 /// <summary>
-/// Root navigation ViewModel coordinating section switching in the main application window.
+/// Root navigation ViewModel coordinating section switching, active indicators, and sidebar badge count.
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
+    private readonly DashboardViewModel _dashboardViewModel;
+    private readonly InventoryViewModel _inventoryViewModel;
     private readonly SuppliersViewModel _suppliersViewModel;
-    private readonly ProductsViewModel _productsViewModel;
-    private readonly StockViewModel _stockViewModel;
     private readonly MovementsViewModel _movementsViewModel;
+    private readonly ReportsViewModel _reportsViewModel;
+    private readonly SettingsViewModel _settingsViewModel;
 
     [ObservableProperty]
     private object _currentViewModel;
 
     [ObservableProperty]
-    private string _currentSectionTitle = "Proveedores";
+    private string _currentSectionTitle = "Inventario";
+
+    [ObservableProperty]
+    private NavigationSection _activeSection = NavigationSection.Inventory;
+
+    [ObservableProperty]
+    private int _inventoryCount;
+
+    /// <summary>Gets whether the Dashboard section is currently active.</summary>
+    public bool IsDashboardActive => ActiveSection == NavigationSection.Dashboard;
+
+    /// <summary>Gets whether the Inventory section is currently active.</summary>
+    public bool IsInventoryActive => ActiveSection == NavigationSection.Inventory;
+
+    /// <summary>Gets whether the Suppliers section is currently active.</summary>
+    public bool IsSuppliersActive => ActiveSection == NavigationSection.Suppliers;
+
+    /// <summary>Gets whether the Sales/Movements section is currently active.</summary>
+    public bool IsSalesActive => ActiveSection == NavigationSection.Sales;
+
+    /// <summary>Gets whether the Reports section is currently active.</summary>
+    public bool IsReportsActive => ActiveSection == NavigationSection.Reports;
+
+    /// <summary>Gets whether the Settings section is currently active.</summary>
+    public bool IsSettingsActive => ActiveSection == NavigationSection.Settings;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="MainViewModel"/> with the suppliers section active.
+    /// Initializes a new instance of <see cref="MainViewModel"/> with the unified Inventory section active by default.
     /// </summary>
     public MainViewModel(
+        DashboardViewModel dashboardViewModel,
+        InventoryViewModel inventoryViewModel,
         SuppliersViewModel suppliersViewModel,
-        ProductsViewModel productsViewModel,
-        StockViewModel stockViewModel,
-        MovementsViewModel movementsViewModel)
+        MovementsViewModel movementsViewModel,
+        ReportsViewModel reportsViewModel,
+        SettingsViewModel settingsViewModel)
     {
+        _dashboardViewModel = dashboardViewModel;
+        _inventoryViewModel = inventoryViewModel;
         _suppliersViewModel = suppliersViewModel;
-        _productsViewModel = productsViewModel;
-        _stockViewModel = stockViewModel;
         _movementsViewModel = movementsViewModel;
-        _currentViewModel = _suppliersViewModel;
+        _reportsViewModel = reportsViewModel;
+        _settingsViewModel = settingsViewModel;
+
+        _currentViewModel = _inventoryViewModel;
+        _inventoryCount = _inventoryViewModel.TotalProductsCount;
+        _inventoryViewModel.TotalProductCountChanged += count => InventoryCount = count;
+    }
+
+    partial void OnActiveSectionChanged(NavigationSection value)
+    {
+        OnPropertyChanged(nameof(IsDashboardActive));
+        OnPropertyChanged(nameof(IsInventoryActive));
+        OnPropertyChanged(nameof(IsSuppliersActive));
+        OnPropertyChanged(nameof(IsSalesActive));
+        OnPropertyChanged(nameof(IsReportsActive));
+        OnPropertyChanged(nameof(IsSettingsActive));
     }
 
     /// <summary>
-    /// Navigates to the Suppliers section and refreshes its data.
+    /// Navigates to the Dashboard section.
+    /// </summary>
+    [RelayCommand]
+    public void ShowDashboard()
+    {
+        ActiveSection = NavigationSection.Dashboard;
+        CurrentViewModel = _dashboardViewModel;
+        CurrentSectionTitle = "Dashboard";
+    }
+
+    /// <summary>
+    /// Navigates to the unified Inventory section and refreshes its data and badge counter.
+    /// </summary>
+    [RelayCommand]
+    public void ShowInventory()
+    {
+        _inventoryViewModel.LoadData();
+        InventoryCount = _inventoryViewModel.TotalProductsCount;
+        ActiveSection = NavigationSection.Inventory;
+        CurrentViewModel = _inventoryViewModel;
+        CurrentSectionTitle = "Inventario";
+    }
+
+    /// <summary>
+    /// Navigates to the Suppliers directory section and refreshes its data.
     /// </summary>
     [RelayCommand]
     public void ShowSuppliers()
     {
         _suppliersViewModel.LoadData();
+        ActiveSection = NavigationSection.Suppliers;
         CurrentViewModel = _suppliersViewModel;
         CurrentSectionTitle = "Proveedores";
     }
 
     /// <summary>
-    /// Navigates to the Products section and refreshes its data.
+    /// Navigates to the Sales and Movements section and refreshes its data.
     /// </summary>
     [RelayCommand]
-    public void ShowProducts()
-    {
-        _productsViewModel.LoadData();
-        CurrentViewModel = _productsViewModel;
-        CurrentSectionTitle = "Productos";
-    }
-
-    /// <summary>
-    /// Navigates to the global Stock section and refreshes stock balances and alerts.
-    /// </summary>
-    [RelayCommand]
-    public void ShowStock()
-    {
-        _stockViewModel.LoadData();
-        CurrentViewModel = _stockViewModel;
-        CurrentSectionTitle = "Stock";
-    }
-
-    /// <summary>
-    /// Navigates to the Stock Movements section and refreshes its data.
-    /// </summary>
-    [RelayCommand]
-    public void ShowMovements()
+    public void ShowSales()
     {
         _movementsViewModel.LoadData();
+        ActiveSection = NavigationSection.Sales;
         CurrentViewModel = _movementsViewModel;
-        CurrentSectionTitle = "Movimientos";
+        CurrentSectionTitle = "Ventas";
+    }
+
+    /// <summary>
+    /// Navigates to the Reports section.
+    /// </summary>
+    [RelayCommand]
+    public void ShowReports()
+    {
+        ActiveSection = NavigationSection.Reports;
+        CurrentViewModel = _reportsViewModel;
+        CurrentSectionTitle = "Reportes";
+    }
+
+    /// <summary>
+    /// Navigates to the System Settings section.
+    /// </summary>
+    [RelayCommand]
+    public void ShowSettings()
+    {
+        ActiveSection = NavigationSection.Settings;
+        CurrentViewModel = _settingsViewModel;
+        CurrentSectionTitle = "Ajustes";
     }
 }

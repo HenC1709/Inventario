@@ -8,12 +8,14 @@ using TiendaBodegas.Domain.Entities;
 namespace TiendaBodegas.UI.ViewModels;
 
 /// <summary>
-/// Modal form ViewModel for creating or editing a <see cref="Product"/> with <see cref="System.ComponentModel.INotifyDataErrorInfo"/> validation.
+/// Modal form ViewModel for creating or editing a <see cref="Product"/> and synchronizing its stock level via <see cref="IInventoryService"/>.
 /// </summary>
 public partial class ProductFormViewModel : ValidatableViewModel
 {
     private readonly ICatalogService _catalogService;
+    private readonly IInventoryService? _inventoryService;
     private readonly int? _editingProductId;
+    private readonly int _initialStock;
 
     [ObservableProperty]
     private string _name = string.Empty;
@@ -34,7 +36,10 @@ public partial class ProductFormViewModel : ValidatableViewModel
     private string _salePriceText = string.Empty;
 
     [ObservableProperty]
-    private string _minStockText = "0";
+    private string _stockText = "0";
+
+    [ObservableProperty]
+    private string _minStockText = "10";
 
     [ObservableProperty]
     private string _nameError = string.Empty;
@@ -50,6 +55,9 @@ public partial class ProductFormViewModel : ValidatableViewModel
 
     [ObservableProperty]
     private string _salePriceError = string.Empty;
+
+    [ObservableProperty]
+    private string _stockError = string.Empty;
 
     [ObservableProperty]
     private string _minStockError = string.Empty;
@@ -75,9 +83,13 @@ public partial class ProductFormViewModel : ValidatableViewModel
     /// <summary>
     /// Initializes a new instance of <see cref="ProductFormViewModel"/> in create or edit mode.
     /// </summary>
-    public ProductFormViewModel(ICatalogService catalogService, Product? productToEdit = null)
+    public ProductFormViewModel(
+        ICatalogService catalogService,
+        IInventoryService? inventoryService = null,
+        Product? productToEdit = null)
     {
         _catalogService = catalogService;
+        _inventoryService = inventoryService;
 
         foreach (var supplier in catalogService.GetAllSuppliers())
         {
@@ -96,47 +108,27 @@ public partial class ProductFormViewModel : ValidatableViewModel
                 : null;
             _purchasePriceText = productToEdit.PurchasePrice.ToString("0.##", CultureInfo.InvariantCulture);
             _salePriceText = productToEdit.SalePrice.ToString("0.##", CultureInfo.InvariantCulture);
+            _initialStock = _inventoryService?.GetTotalStockByProduct(productToEdit.Id) ?? 0;
+            _stockText = _initialStock.ToString(CultureInfo.InvariantCulture);
             _minStockText = productToEdit.MinStock.ToString(CultureInfo.InvariantCulture);
         }
         else
         {
-            Title = "Nuevo Producto";
+            Title = "Agregar Nuevo Producto";
             _selectedSupplier = Suppliers.FirstOrDefault();
         }
     }
 
-    /// <summary>
-    /// Revalidates the product name whenever it changes.
-    /// </summary>
     partial void OnNameChanged(string value) => ValidateName();
-
-    /// <summary>
-    /// Revalidates the SKU whenever it changes.
-    /// </summary>
     partial void OnSkuChanged(string value) => ValidateSku();
-
-    /// <summary>
-    /// Revalidates the product category whenever it changes.
-    /// </summary>
     partial void OnCategoryChanged(string value) => ValidateCategory();
-
-    /// <summary>
-    /// Revalidates the purchase price text whenever it changes.
-    /// </summary>
     partial void OnPurchasePriceTextChanged(string value) => ValidatePurchasePrice();
-
-    /// <summary>
-    /// Revalidates the sale price text whenever it changes.
-    /// </summary>
     partial void OnSalePriceTextChanged(string value) => ValidateSalePrice();
-
-    /// <summary>
-    /// Revalidates the minimum stock text whenever it changes.
-    /// </summary>
+    partial void OnStockTextChanged(string value) => ValidateStock();
     partial void OnMinStockTextChanged(string value) => ValidateMinStock();
 
     /// <summary>
-    /// Validates all fields and persists the product when valid, keeping the dialog open on validation or domain errors.
+    /// Validates all fields, persists product metadata, and records initial or adjustment stock movements when applicable.
     /// </summary>
     [RelayCommand]
     public void Save()
@@ -147,8 +139,11 @@ public partial class ProductFormViewModel : ValidatableViewModel
         if (HasErrors
             || !TryParseNonNegativeDecimal(PurchasePriceText, out var purchasePrice)
             || !TryParsePositiveDecimal(SalePriceText, out var salePrice)
+            || !TryParseNonNegativeInt(StockText, out var targetStock)
             || !TryParseNonNegativeInt(MinStockText, out var minStock))
+        {
             return;
+        }
 
         try
         {
@@ -163,10 +158,19 @@ public partial class ProductFormViewModel : ValidatableViewModel
                     purchasePrice,
                     salePrice,
                     minStock);
+
+                if (_inventoryService != null)
+                {
+                    var delta = targetStock - _initialStock;
+                    if (delta > 0)
+                        _inventoryService.RegisterEntry(_editingProductId.Value, delta, "Ajuste manual desde inventario");
+                    else if (delta < 0)
+                        _inventoryService.RegisterExit(_editingProductId.Value, -delta, "Ajuste manual desde inventario");
+                }
             }
             else
             {
-                _catalogService.CreateProduct(
+                var created = _catalogService.CreateProduct(
                     Name,
                     Sku,
                     Category,
@@ -174,6 +178,9 @@ public partial class ProductFormViewModel : ValidatableViewModel
                     purchasePrice,
                     salePrice,
                     minStock);
+
+                if (_inventoryService != null && targetStock > 0)
+                    _inventoryService.RegisterEntry(created.Id, targetStock, "Stock inicial");
             }
 
             RequestClose?.Invoke(true);
@@ -193,9 +200,6 @@ public partial class ProductFormViewModel : ValidatableViewModel
         RequestClose?.Invoke(false);
     }
 
-    /// <summary>
-    /// Runs validation across all product form fields.
-    /// </summary>
     private void ValidateAll()
     {
         ValidateName();
@@ -203,12 +207,10 @@ public partial class ProductFormViewModel : ValidatableViewModel
         ValidateCategory();
         ValidatePurchasePrice();
         ValidateSalePrice();
+        ValidateStock();
         ValidateMinStock();
     }
 
-    /// <summary>
-    /// Validates that the product name is non-empty.
-    /// </summary>
     private void ValidateName()
     {
         var error = string.IsNullOrWhiteSpace(Name)
@@ -219,9 +221,6 @@ public partial class ProductFormViewModel : ValidatableViewModel
         SetPropertyError(nameof(Name), error);
     }
 
-    /// <summary>
-    /// Validates that the SKU is non-empty and not already assigned to another product.
-    /// </summary>
     private void ValidateSku()
     {
         string error;
@@ -242,9 +241,6 @@ public partial class ProductFormViewModel : ValidatableViewModel
         SetPropertyError(nameof(Sku), error);
     }
 
-    /// <summary>
-    /// Validates that the product category is non-empty.
-    /// </summary>
     private void ValidateCategory()
     {
         var error = string.IsNullOrWhiteSpace(Category)
@@ -255,9 +251,6 @@ public partial class ProductFormViewModel : ValidatableViewModel
         SetPropertyError(nameof(Category), error);
     }
 
-    /// <summary>
-    /// Validates that the purchase price parses as a non-negative decimal number.
-    /// </summary>
     private void ValidatePurchasePrice()
     {
         var error = TryParseNonNegativeDecimal(PurchasePriceText, out _)
@@ -268,9 +261,6 @@ public partial class ProductFormViewModel : ValidatableViewModel
         SetPropertyError(nameof(PurchasePriceText), error);
     }
 
-    /// <summary>
-    /// Validates that the sale price parses as a strictly positive decimal number.
-    /// </summary>
     private void ValidateSalePrice()
     {
         var error = TryParsePositiveDecimal(SalePriceText, out _)
@@ -281,9 +271,16 @@ public partial class ProductFormViewModel : ValidatableViewModel
         SetPropertyError(nameof(SalePriceText), error);
     }
 
-    /// <summary>
-    /// Validates that the minimum stock parses as a non-negative integer.
-    /// </summary>
+    private void ValidateStock()
+    {
+        var error = TryParseNonNegativeInt(StockText, out _)
+            ? string.Empty
+            : "Ingrese un stock entero mayor o igual a 0.";
+
+        StockError = error;
+        SetPropertyError(nameof(StockText), error);
+    }
+
     private void ValidateMinStock()
     {
         var error = TryParseNonNegativeInt(MinStockText, out _)
@@ -294,9 +291,6 @@ public partial class ProductFormViewModel : ValidatableViewModel
         SetPropertyError(nameof(MinStockText), error);
     }
 
-    /// <summary>
-    /// Parses a decimal value supporting dot or comma decimal separators and checks that it is non-negative.
-    /// </summary>
     private static bool TryParseNonNegativeDecimal(string? text, out decimal value)
     {
         value = 0m;
@@ -314,17 +308,11 @@ public partial class ProductFormViewModel : ValidatableViewModel
             && value >= 0m;
     }
 
-    /// <summary>
-    /// Parses a decimal value supporting dot or comma decimal separators and checks that it is strictly positive.
-    /// </summary>
     private static bool TryParsePositiveDecimal(string? text, out decimal value)
     {
         return TryParseNonNegativeDecimal(text, out value) && value > 0m;
     }
 
-    /// <summary>
-    /// Parses a non-negative integer value from form input text.
-    /// </summary>
     private static bool TryParseNonNegativeInt(string? text, out int value)
     {
         value = 0;

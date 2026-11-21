@@ -28,12 +28,15 @@ public static class DependencyInjection
         services.AddSingleton<IStockMovementRepository, StockMovementRepository>();
         services.AddSingleton<IInventoryService, InventoryManager>();
         services.AddSingleton<ICatalogService, CatalogManager>();
+        services.AddSingleton<IInventoryExportService, InventoryCsvExporter>();
         services.AddSingleton<IDialogService, DialogService>();
 
+        services.AddSingleton<DashboardViewModel>();
+        services.AddSingleton<InventoryViewModel>();
         services.AddSingleton<SuppliersViewModel>();
-        services.AddSingleton<ProductsViewModel>();
-        services.AddSingleton<StockViewModel>();
         services.AddSingleton<MovementsViewModel>();
+        services.AddSingleton<ReportsViewModel>();
+        services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
 

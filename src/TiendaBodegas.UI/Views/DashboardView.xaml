@@ -1,0 +1,23 @@
+<UserControl x:Class="TiendaBodegas.UI.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="880">
+    <StackPanel>
+        <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitleTextStyle}" />
+        <TextBlock Text="{Binding Subtitle}" Style="{StaticResource PageSubtitleTextStyle}" Margin="0,4,0,24" />
+
+        <Border Style="{StaticResource CardBorderStyle}" Padding="24">
+            <StackPanel>
+                <TextBlock Text="Distribución de Stock y Alertas de Reposición"
+                           Style="{StaticResource SectionHeadingTextStyle}" />
+                <TextBlock Text="Esta vista ejecutiva se completará en el bloque R7 con gráficos de categorías y alertas de reposición en vivo."
+                           Style="{StaticResource PageSubtitleTextStyle}"
+                           Margin="0,8,0,0"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

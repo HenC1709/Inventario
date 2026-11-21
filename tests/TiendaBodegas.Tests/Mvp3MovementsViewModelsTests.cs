@@ -185,10 +185,10 @@ public class Mvp3MovementsViewModelsTests : IDisposable
     }
 
     /// <summary>
-    /// Verifies that <see cref="StockViewModel"/> filters global product totals by search and low-stock toggle and computes alert counts.
+    /// Verifies that <see cref="InventoryViewModel"/> tracks alert counts and filters low/out-of-stock products accurately.
     /// </summary>
     [Fact]
-    public void StockViewModel_FiltersBySearchAndLowStock_AndComputesAlertCounts()
+    public void InventoryViewModel_FiltersAlertsAndSearch_AndComputesKpiCounters()
     {
         var supplier = _catalogManager.CreateSupplier("Distribuidora Norte", "contacto@norte.com", "Alimentos");
         var rice = _catalogManager.CreateProduct("Arroz 1kg", "ARR-001", "Alimentos", supplier.Id, 1.20m, 2.00m, minStock: 30);
@@ -198,25 +198,26 @@ public class Mvp3MovementsViewModelsTests : IDisposable
         _inventoryManager.RegisterEntry(rice.Id, 20, "Bajo mínimo");
         _inventoryManager.RegisterEntry(oil.Id, 25, "Stock sano");
 
-        var stockVm = new StockViewModel(_inventoryManager);
+        var inventoryVm = new InventoryViewModel(
+            _catalogManager,
+            _inventoryManager,
+            new InventoryCsvExporter(),
+            new StubMovementDialogService());
 
-        Assert.Equal(3, stockVm.ProductTotals.Count);
-        Assert.Equal(2, stockVm.LowTotalProductCount);
-        Assert.True(stockVm.HasLowStockAlerts);
+        Assert.Equal(3, inventoryVm.TotalProductsCount);
+        Assert.Equal(2, inventoryVm.LowAndOutOfStockCount);
 
-        stockVm.ShowOnlyLowStock = true;
-        Assert.Equal(2, stockVm.ProductTotals.Count);
-        Assert.Contains(stockVm.ProductTotals, p => p.ProductId == rice.Id && p.StockStatusLabel == "Bajo Stock");
-        Assert.Contains(stockVm.ProductTotals, p => p.ProductId == zeroStockProduct.Id && p.StockStatusLabel == "Sin Stock");
+        inventoryVm.FilterLowStockCommand.Execute(null);
+        Assert.Equal(2, inventoryVm.FilteredItemsCount);
+        Assert.Contains(inventoryVm.PagedItems, p => p.ProductId == rice.Id && p.StockStatusLabel == "Bajo Stock");
+        Assert.Contains(inventoryVm.PagedItems, p => p.ProductId == zeroStockProduct.Id && p.StockStatusLabel == "Sin Stock");
 
-        stockVm.ClearFiltersCommand.Execute(null);
-        Assert.False(stockVm.ShowOnlyLowStock);
-        Assert.Equal(3, stockVm.ProductTotals.Count);
+        inventoryVm.ResetFiltersCommand.Execute(null);
+        Assert.Equal(3, inventoryVm.FilteredItemsCount);
 
-        stockVm.SearchText = "ACE-001";
-        var onlyOil = Assert.Single(stockVm.ProductTotals);
+        inventoryVm.SearchText = "ACE-001";
+        var onlyOil = Assert.Single(inventoryVm.PagedItems);
         Assert.Equal(oil.Id, onlyOil.ProductId);
-        Assert.False(stockVm.HasLowStockAlerts);
     }
 
     /// <summary>
@@ -267,29 +268,11 @@ public class Mvp3MovementsViewModelsTests : IDisposable
     /// </summary>
     private sealed class StubMovementDialogService : IDialogService
     {
-        /// <summary>
-        /// Gets or sets the callback invoked when <see cref="ShowMovementForm"/> is called.
-        /// </summary>
         public Func<MovementFormViewModel, bool>? OnShowMovementForm { get; set; }
-
-        /// <summary>
-        /// Returns false without displaying a modal window.
-        /// </summary>
         public bool ShowProductForm(ProductFormViewModel viewModel) => false;
-
-        /// <summary>
-        /// Returns false without displaying a modal window.
-        /// </summary>
         public bool ShowSupplierForm(SupplierFormViewModel viewModel) => false;
-
-        /// <summary>
-        /// Invokes <see cref="OnShowMovementForm"/> or returns false if unset.
-        /// </summary>
         public bool ShowMovementForm(MovementFormViewModel viewModel) => OnShowMovementForm?.Invoke(viewModel) ?? false;
-
-        /// <summary>
-        /// Returns false without displaying a confirmation dialog.
-        /// </summary>
         public bool Confirm(string message, string title) => false;
+        public string? ShowSaveFileDialog(string defaultFileName, string filter) => null;
     }
 }
