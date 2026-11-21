@@ -6,6 +6,7 @@ using TiendaBodegas.Domain.Enums;
 using TiendaBodegas.Domain.Interfaces;
 using TiendaBodegas.Infrastructure.Persistence.Json;
 using TiendaBodegas.Infrastructure.Persistence.Repositories;
+using TiendaBodegas.Infrastructure.Services;
 using TiendaBodegas.UI.Services;
 using TiendaBodegas.UI.ViewModels;
 
@@ -27,6 +28,7 @@ public static class DependencyInjection
         services.AddSingleton<IProductRepository, ProductRepository>();
         services.AddSingleton<IStockMovementRepository, StockMovementRepository>();
         services.AddSingleton<ISettingsRepository, SettingsRepository>();
+        services.AddSingleton<IExchangeRateService, DailyExchangeRateService>();
         services.AddSingleton<IInventoryService, InventoryManager>();
         services.AddSingleton<ICatalogService, CatalogManager>();
         services.AddSingleton<ISettingsService, SettingsManager>();

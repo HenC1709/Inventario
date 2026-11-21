@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using TiendaBodegas.Application.DTOs;
 using TiendaBodegas.Application.Interfaces;
 using TiendaBodegas.Domain.Entities;
+using TiendaBodegas.UI.Converters;
 using TiendaBodegas.UI.Services;
 
 namespace TiendaBodegas.UI.ViewModels;
@@ -82,6 +83,8 @@ public partial class InventoryViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FormattedEstimatedValue))]
+    [NotifyPropertyChangedFor(nameof(PurchasePriceHeader))]
+    [NotifyPropertyChangedFor(nameof(SalePriceHeader))]
     private string _currencyCode = "USD";
 
     [ObservableProperty]
@@ -132,10 +135,20 @@ public partial class InventoryViewModel : ObservableObject
     public ObservableCollection<PageNumberItem> PageNumbers { get; } = new();
 
     /// <summary>
-    /// Gets the total inventory sale valuation formatted with the active currency symbol.
+    /// Gets the total inventory sale valuation formatted according to the active currency.
     /// </summary>
     public string FormattedEstimatedValue =>
-        CurrencySymbol + EstimatedTotalValue.ToString("#,##0.00", CultureInfo.GetCultureInfo("en-US"));
+        CurrencyAmountConverter.Format(EstimatedTotalValue, CurrencyCode, includeCodePrefix: false);
+
+    /// <summary>
+    /// Gets the Purchase Price column header text including the active currency code.
+    /// </summary>
+    public string PurchasePriceHeader => $"PRECIO COMPRA ({CurrencyCode})";
+
+    /// <summary>
+    /// Gets the Sale Price column header text including the active currency code.
+    /// </summary>
+    public string SalePriceHeader => $"PRECIO VENTA ({CurrencyCode})";
 
     /// <summary>
     /// Gets the attention badge caption shown inside the low-stock KPI card.
@@ -210,8 +223,8 @@ public partial class InventoryViewModel : ObservableObject
 
         if (_settingsService != null)
         {
-            ApplySettings(_settingsService.GetSettings());
-            _settingsService.SettingsChanged += ApplySettings;
+            ApplySettings(_settingsService.GetSettings(), reloadData: false);
+            _settingsService.SettingsChanged += OnSettingsChanged;
         }
 
         LoadData();
@@ -394,7 +407,12 @@ public partial class InventoryViewModel : ObservableObject
     {
         ClearStatus();
         var defaultMinStock = _settingsService?.GetSettings().DefaultLowStockThreshold ?? 10;
-        var formViewModel = new ProductFormViewModel(_catalogService, _inventoryService, defaultMinStock: defaultMinStock);
+        var formViewModel = new ProductFormViewModel(
+            _catalogService,
+            _inventoryService,
+            defaultMinStock: defaultMinStock,
+            currencySymbol: CurrencySymbol,
+            currencyCode: CurrencyCode);
         if (_dialogService.ShowProductForm(formViewModel))
         {
             LoadData();
@@ -419,7 +437,12 @@ public partial class InventoryViewModel : ObservableObject
             return;
         }
 
-        var formViewModel = new ProductFormViewModel(_catalogService, _inventoryService, product);
+        var formViewModel = new ProductFormViewModel(
+            _catalogService,
+            _inventoryService,
+            product,
+            currencySymbol: CurrencySymbol,
+            currencyCode: CurrencyCode);
         if (_dialogService.ShowProductForm(formViewModel))
         {
             LoadData();
@@ -649,9 +672,16 @@ public partial class InventoryViewModel : ObservableObject
         StatusMessage = message;
     }
 
-    private void ApplySettings(AppSettings settings)
+    private void OnSettingsChanged(AppSettings settings)
+    {
+        ApplySettings(settings, reloadData: true);
+    }
+
+    private void ApplySettings(AppSettings settings, bool reloadData)
     {
         CurrencyCode = settings.CurrencyCode;
         CurrencySymbol = settings.CurrencySymbol;
+        if (reloadData)
+            LoadData();
     }
 }

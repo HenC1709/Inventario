@@ -155,7 +155,7 @@ public class Mvp3MovementsViewModelsTests : IDisposable
     {
         var constructorParams = typeof(MovementsViewModel).GetConstructors().Single().GetParameters();
         Assert.Equal(
-            new[] { typeof(IInventoryService), typeof(ICatalogService), typeof(IDialogService) },
+            new[] { typeof(IInventoryService), typeof(ICatalogService), typeof(IDialogService), typeof(ISettingsService) },
             constructorParams.Select(p => p.ParameterType).ToArray());
 
         var dialogStub = new StubMovementDialogService();

@@ -16,6 +16,8 @@ public partial class ProductFormViewModel : ValidatableViewModel
     private readonly IInventoryService? _inventoryService;
     private readonly int? _editingProductId;
     private readonly int _initialStock;
+    private readonly string _currencySymbol;
+    private readonly string _currencyCode;
 
     [ObservableProperty]
     private string _name = string.Empty;
@@ -76,6 +78,23 @@ public partial class ProductFormViewModel : ValidatableViewModel
     public string Title { get; }
 
     /// <summary>
+    /// Gets the purchase price field label including the active currency code and symbol.
+    /// </summary>
+    public string PurchasePriceLabel => $"PRECIO COMPRA ({_currencyCode} {_currencySymbol})";
+
+    /// <summary>
+    /// Gets the sale price field label including the active currency code and symbol.
+    /// </summary>
+    public string SalePriceLabel => $"PRECIO VENTA ({_currencyCode} {_currencySymbol})";
+
+    /// <summary>
+    /// Gets a currency-appropriate numeric placeholder for price text boxes.
+    /// </summary>
+    public string PricePlaceholder => string.Equals(_currencyCode, "COP", StringComparison.OrdinalIgnoreCase)
+        ? "Ej. 18000"
+        : "0.00";
+
+    /// <summary>
     /// Raised when the form requests closing with the dialog outcome (true = saved, false = cancelled).
     /// </summary>
     public event Action<bool>? RequestClose;
@@ -87,10 +106,16 @@ public partial class ProductFormViewModel : ValidatableViewModel
         ICatalogService catalogService,
         IInventoryService? inventoryService = null,
         Product? productToEdit = null,
-        int defaultMinStock = 10)
+        int defaultMinStock = 10,
+        string currencySymbol = "$",
+        string currencyCode = "USD")
     {
         _catalogService = catalogService;
         _inventoryService = inventoryService;
+        _currencyCode = string.IsNullOrWhiteSpace(currencyCode) ? "USD" : currencyCode.Trim().ToUpperInvariant();
+        _currencySymbol = string.IsNullOrWhiteSpace(currencySymbol)
+            ? (string.Equals(_currencyCode, "EUR", StringComparison.OrdinalIgnoreCase) ? "€" : "$")
+            : currencySymbol;
 
         foreach (var supplier in catalogService.GetAllSuppliers())
         {
@@ -139,8 +164,8 @@ public partial class ProductFormViewModel : ValidatableViewModel
         ValidateAll();
 
         if (HasErrors
-            || !TryParseNonNegativeDecimal(PurchasePriceText, out var purchasePrice)
-            || !TryParsePositiveDecimal(SalePriceText, out var salePrice)
+            || !TryParseNonNegativeDecimal(PurchasePriceText, _currencyCode, out var purchasePrice)
+            || !TryParsePositiveDecimal(SalePriceText, _currencyCode, out var salePrice)
             || !TryParseNonNegativeInt(StockText, out var targetStock)
             || !TryParseNonNegativeInt(MinStockText, out var minStock))
         {
@@ -255,7 +280,7 @@ public partial class ProductFormViewModel : ValidatableViewModel
 
     private void ValidatePurchasePrice()
     {
-        var error = TryParseNonNegativeDecimal(PurchasePriceText, out _)
+        var error = TryParseNonNegativeDecimal(PurchasePriceText, _currencyCode, out _)
             ? string.Empty
             : "Ingrese un precio de compra válido mayor o igual a 0.";
 
@@ -265,7 +290,7 @@ public partial class ProductFormViewModel : ValidatableViewModel
 
     private void ValidateSalePrice()
     {
-        var error = TryParsePositiveDecimal(SalePriceText, out _)
+        var error = TryParsePositiveDecimal(SalePriceText, _currencyCode, out _)
             ? string.Empty
             : "Ingrese un precio de venta válido mayor a 0.";
 
@@ -293,26 +318,71 @@ public partial class ProductFormViewModel : ValidatableViewModel
         SetPropertyError(nameof(MinStockText), error);
     }
 
-    private static bool TryParseNonNegativeDecimal(string? text, out decimal value)
+    private static bool TryParseNonNegativeDecimal(string? text, string currencyCode, out decimal value)
     {
         value = 0m;
         if (string.IsNullOrWhiteSpace(text))
             return false;
 
-        var trimmed = text.Trim();
-        var hasComma = trimmed.Contains(',');
-        var hasDot = trimmed.Contains('.');
+        var trimmed = text.Trim()
+            .Replace("COP", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("USD", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("EUR", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("$", string.Empty, StringComparison.Ordinal)
+            .Replace("€", string.Empty, StringComparison.Ordinal)
+            .Replace(" ", string.Empty, StringComparison.Ordinal);
 
-        if (hasComma && !hasDot)
-            trimmed = trimmed.Replace(',', '.');
+        if (string.IsNullOrEmpty(trimmed))
+            return false;
+
+        var dotCount = trimmed.Count(c => c == '.');
+        var commaCount = trimmed.Count(c => c == ',');
+
+        if (dotCount > 0 && commaCount > 0)
+        {
+            if (trimmed.LastIndexOf(',') > trimmed.LastIndexOf('.'))
+                trimmed = trimmed.Replace(".", string.Empty, StringComparison.Ordinal).Replace(',', '.');
+            else
+                trimmed = trimmed.Replace(",", string.Empty, StringComparison.Ordinal);
+        }
+        else if (commaCount > 1)
+        {
+            trimmed = trimmed.Replace(",", string.Empty, StringComparison.Ordinal);
+        }
+        else if (dotCount > 1)
+        {
+            trimmed = trimmed.Replace(".", string.Empty, StringComparison.Ordinal);
+        }
+        else if (commaCount == 1)
+        {
+            var parts = trimmed.Split(',');
+            trimmed = IsThousandsGroup(parts[0], parts[1])
+                ? parts[0] + parts[1]
+                : parts[0] + "." + parts[1];
+        }
+        else if (dotCount == 1 && string.Equals(currencyCode, "COP", StringComparison.OrdinalIgnoreCase))
+        {
+            var parts = trimmed.Split('.');
+            if (IsThousandsGroup(parts[0], parts[1]))
+                trimmed = parts[0] + parts[1];
+        }
 
         return decimal.TryParse(trimmed, NumberStyles.Number, CultureInfo.InvariantCulture, out value)
             && value >= 0m;
     }
 
-    private static bool TryParsePositiveDecimal(string? text, out decimal value)
+    private static bool IsThousandsGroup(string integerPart, string trailingPart)
     {
-        return TryParseNonNegativeDecimal(text, out value) && value > 0m;
+        return trailingPart.Length == 3
+            && trailingPart.All(char.IsDigit)
+            && integerPart.Length is >= 1 and <= 3
+            && integerPart.All(char.IsDigit)
+            && !string.Equals(integerPart, "0", StringComparison.Ordinal);
+    }
+
+    private static bool TryParsePositiveDecimal(string? text, string currencyCode, out decimal value)
+    {
+        return TryParseNonNegativeDecimal(text, currencyCode, out value) && value > 0m;
     }
 
     private static bool TryParseNonNegativeInt(string? text, out int value)

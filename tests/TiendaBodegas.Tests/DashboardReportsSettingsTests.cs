@@ -1,4 +1,8 @@
+using System.Globalization;
 using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using TiendaBodegas.Application.DTOs;
 using TiendaBodegas.Application.Interfaces;
@@ -6,7 +10,9 @@ using TiendaBodegas.Application.Services;
 using TiendaBodegas.Domain.Entities;
 using TiendaBodegas.Infrastructure.Persistence.Json;
 using TiendaBodegas.Infrastructure.Persistence.Repositories;
+using TiendaBodegas.Infrastructure.Services;
 using TiendaBodegas.UI;
+using TiendaBodegas.UI.Converters;
 using TiendaBodegas.UI.Services;
 using TiendaBodegas.UI.ViewModels;
 using Xunit;
@@ -173,69 +179,242 @@ public class DashboardReportsSettingsTests : IDisposable
     }
 
     /// <summary>
-    /// Verifies <see cref="SettingsViewModel"/> validation, JSON persistence across reloads, and live currency/threshold propagation.
+    /// Verifies <see cref="SettingsViewModel"/> validation, daily exchange-rate conversion on currency change,
+    /// JSON persistence across reloads, and live propagation to inventory and movements.
     /// </summary>
     [Fact]
-    public void SettingsViewModel_ValidatesPersistsAndPropagatesCurrencyAndThreshold()
+    public async Task SettingsViewModel_ValidatesPersistsAndConvertsPricesOnCurrencyChange()
     {
-        using (var provider = BuildSeededProvider())
+        var stubRates = new StubExchangeRateService(new Dictionary<(string From, string To), decimal>
+        {
+            [("USD", "COP")] = 4000m,
+            [("COP", "EUR")] = 0.00025m
+        });
+
+        using (var provider = BuildSeededProvider(stubRates))
         {
             var settingsVm = provider.GetRequiredService<SettingsViewModel>();
             var inventoryVm = provider.GetRequiredService<InventoryViewModel>();
+            var movementsVm = provider.GetRequiredService<MovementsViewModel>();
             var catalog = provider.GetRequiredService<ICatalogService>();
             var inventory = provider.GetRequiredService<IInventoryService>();
 
             settingsVm.BusinessName = "";
             settingsVm.LowStockThresholdText = "-2";
-            settingsVm.SaveSettingsCommand.Execute(null);
+            await settingsVm.SaveSettingsCommand.ExecuteAsync(null);
 
             Assert.True(settingsVm.HasErrors);
             Assert.NotEmpty(settingsVm.GetErrors(nameof(SettingsViewModel.BusinessName)).Cast<string>());
             Assert.NotEmpty(settingsVm.GetErrors(nameof(SettingsViewModel.LowStockThresholdText)).Cast<string>());
 
+            // Switch USD -> COP at 1 USD = 4,000 COP
             settingsVm.BusinessName = "Bodega Central Norte";
+            settingsVm.SelectedCurrencyCode = "COP";
+            settingsVm.LowStockThresholdText = "12";
+            await settingsVm.SaveSettingsCommand.ExecuteAsync(null);
+
+            Assert.False(settingsVm.HasErrors);
+            Assert.False(settingsVm.IsErrorMessage);
+            Assert.Contains("4,000.00 COP", settingsVm.StatusMessage);
+            Assert.Equal("COP", inventoryVm.CurrencyCode);
+            Assert.Equal("$", inventoryVm.CurrencySymbol);
+            Assert.Equal("PRECIO COMPRA (COP)", inventoryVm.PurchasePriceHeader);
+            Assert.Equal("PRECIO VENTA (COP)", inventoryVm.SalePriceHeader);
+            Assert.Equal("$10,420,400", inventoryVm.FormattedEstimatedValue);
+
+            var coffeeInCop = catalog.GetAllProducts().First(p => p.SKU == "SKU-10482");
+            Assert.Equal(34000m, coffeeInCop.PurchasePrice);
+            Assert.Equal(48000m, coffeeInCop.SalePrice);
+
+            var coffeeExitInCop = movementsVm.Movements.First(m => m.ProductSku == "SKU-10482" && m.Quantity == 5);
+            Assert.Equal(240000m, coffeeExitInCop.TotalAmount);
+            Assert.Equal("COP", movementsVm.CurrencyCode);
+            Assert.Equal("$", movementsVm.CurrencySymbol);
+
+            // Colombian thousands-separator parsing in ProductFormViewModel while in COP
+            var copProductForm = new ProductFormViewModel(
+                catalog,
+                inventory,
+                defaultMinStock: 10,
+                currencySymbol: "$",
+                currencyCode: "COP");
+            Assert.Equal("PRECIO COMPRA (COP $)", copProductForm.PurchasePriceLabel);
+            Assert.Equal("PRECIO VENTA (COP $)", copProductForm.SalePriceLabel);
+            copProductForm.Sku = "SKU-COP-1";
+            copProductForm.Name = "Café Premium";
+            copProductForm.Category = "Bebidas";
+            copProductForm.PurchasePriceText = "18.000";
+            copProductForm.SalePriceText = "24,500";
+            copProductForm.StockText = "0";
+            copProductForm.SaveCommand.Execute(null);
+            Assert.False(copProductForm.HasErrors);
+            var savedCopProduct = catalog.GetAllProducts().First(p => p.SKU == "SKU-COP-1");
+            Assert.Equal(18000m, savedCopProduct.PurchasePrice);
+            Assert.Equal(24500m, savedCopProduct.SalePrice);
+            catalog.DeleteProduct(savedCopProduct.Id);
+
+            // Switch COP -> EUR at 1 COP = 0.00025 EUR (back to 1:1 numeric scale for deterministic assertion)
             settingsVm.SelectedCurrencyCode = "EUR";
             settingsVm.LowStockThresholdText = "15";
-            settingsVm.SaveSettingsCommand.Execute(null);
+            await settingsVm.SaveSettingsCommand.ExecuteAsync(null);
 
             Assert.False(settingsVm.HasErrors);
             Assert.False(settingsVm.IsErrorMessage);
             Assert.Equal("EUR", inventoryVm.CurrencyCode);
             Assert.Equal("€", inventoryVm.CurrencySymbol);
+            Assert.Equal("PRECIO COMPRA (EUR)", inventoryVm.PurchasePriceHeader);
+            Assert.Equal("PRECIO VENTA (EUR)", inventoryVm.SalePriceHeader);
             Assert.Equal("€2,605.10", inventoryVm.FormattedEstimatedValue);
+            Assert.Equal("EUR", movementsVm.CurrencyCode);
+            Assert.Equal("€", movementsVm.CurrencySymbol);
 
-            var productForm = new ProductFormViewModel(catalog, inventory, defaultMinStock: int.Parse(settingsVm.LowStockThresholdText));
+            var productForm = new ProductFormViewModel(
+                catalog,
+                inventory,
+                defaultMinStock: int.Parse(settingsVm.LowStockThresholdText),
+                currencySymbol: inventoryVm.CurrencySymbol,
+                currencyCode: inventoryVm.CurrencyCode);
             Assert.Equal("15", productForm.MinStockText);
+            Assert.Equal("PRECIO COMPRA (EUR €)", productForm.PurchasePriceLabel);
+            Assert.Equal("PRECIO VENTA (EUR €)", productForm.SalePriceLabel);
 
             var settingsService = provider.GetRequiredService<ISettingsService>();
+            Assert.Throws<ArgumentException>(() => settingsService.UpdateSettings("Negocio", "MXN", 10));
             Assert.Throws<ArgumentException>(() => settingsService.UpdateSettings("Negocio", "GBP", 10));
         }
 
-        using (var reloadedProvider = BuildServiceProviderOnly())
+        using (var reloadedProvider = BuildServiceProviderOnly(stubRates))
         {
             DependencyInjection.InitializeDatabase(reloadedProvider);
             var reloadedSettingsVm = reloadedProvider.GetRequiredService<SettingsViewModel>();
             var reloadedInventoryVm = reloadedProvider.GetRequiredService<InventoryViewModel>();
+            var reloadedCatalog = reloadedProvider.GetRequiredService<ICatalogService>();
 
             Assert.Equal("Bodega Central Norte", reloadedSettingsVm.BusinessName);
             Assert.Equal("EUR", reloadedSettingsVm.SelectedCurrencyCode);
             Assert.Equal("15", reloadedSettingsVm.LowStockThresholdText);
             Assert.Equal("EUR", reloadedInventoryVm.CurrencyCode);
             Assert.Equal("€2,605.10", reloadedInventoryVm.FormattedEstimatedValue);
+
+            var reloadedCoffee = reloadedCatalog.GetAllProducts().First(p => p.SKU == "SKU-10482");
+            Assert.Equal(8.50m, reloadedCoffee.PurchasePrice);
+            Assert.Equal(12.00m, reloadedCoffee.SalePrice);
         }
     }
 
-    private ServiceProvider BuildSeededProvider()
+    /// <summary>
+    /// Verifies <see cref="DailyExchangeRateService"/> primary parsing, daily caching, secondary failover,
+    /// offline reference fallback, and same-currency shortcut.
+    /// </summary>
+    [Fact]
+    public async Task DailyExchangeRateService_HandlesPrimaryCacheSecondaryAndOfflineFallback()
     {
-        var provider = BuildServiceProviderOnly();
+        var today = new DateOnly(2026, 11, 21);
+
+        // 1. Primary API succeeds and caches for the same day
+        var primaryCalls = 0;
+        var primaryHandler = new StubHttpMessageHandler(request =>
+        {
+            primaryCalls++;
+            var json = """
+            {
+              "result": "success",
+              "time_last_update_utc": "Sat, 21 Nov 2026 00:02:31 +0000",
+              "rates": { "USD": 1, "COP": 4125.50, "EUR": 0.93 }
+            }
+            """;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+        });
+
+        using var primaryClient = new HttpClient(primaryHandler);
+        var primaryService = new DailyExchangeRateService(primaryClient, () => today);
+
+        var sameCurrency = await primaryService.GetExchangeRateAsync("USD", "USD");
+        Assert.Equal(1m, sameCurrency.Rate);
+        Assert.Equal(0, primaryCalls);
+
+        var firstQuote = await primaryService.GetExchangeRateAsync("USD", "COP");
+        var cachedQuote = await primaryService.GetExchangeRateAsync("USD", "COP");
+        Assert.Equal(4125.50m, firstQuote.Rate);
+        Assert.False(firstQuote.IsFallback);
+        Assert.Equal("open.er-api.com", firstQuote.Source);
+        Assert.Equal(firstQuote, cachedQuote);
+        Assert.Equal(1, primaryCalls);
+
+        // 2. Primary fails -> secondary jsDelivr currency-api succeeds
+        var failoverHandler = new StubHttpMessageHandler(request =>
+        {
+            if (request.RequestUri!.Host.Contains("open.er-api.com", StringComparison.OrdinalIgnoreCase))
+                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+
+            var json = """
+            {
+              "date": "2026-11-21",
+              "usd": { "cop": 4180.75, "eur": 0.94 }
+            }
+            """;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+        });
+
+        using var failoverClient = new HttpClient(failoverHandler);
+        var failoverService = new DailyExchangeRateService(failoverClient, () => today);
+        var secondaryQuote = await failoverService.GetExchangeRateAsync("USD", "COP");
+        Assert.Equal(4180.75m, secondaryQuote.Rate);
+        Assert.False(secondaryQuote.IsFallback);
+        Assert.Equal("currency-api (jsDelivr)", secondaryQuote.Source);
+
+        // 3. Both endpoints offline -> local reference fallback
+        var offlineHandler = new StubHttpMessageHandler(_ => throw new HttpRequestException("Offline"));
+        using var offlineClient = new HttpClient(offlineHandler);
+        var offlineService = new DailyExchangeRateService(offlineClient, () => today);
+        var fallbackQuote = await offlineService.GetExchangeRateAsync("USD", "COP");
+        Assert.True(fallbackQuote.IsFallback);
+        Assert.Equal(4200m, fallbackQuote.Rate);
+    }
+
+    /// <summary>
+    /// Verifies <see cref="Product.ConvertPrices"/> rounding/guards and <see cref="CurrencyAmountConverter"/> formatting.
+    /// </summary>
+    [Fact]
+    public void ProductConvertPrices_AndCurrencyAmountConverter_BehaveAsExpected()
+    {
+        var product = new Product("Café", "SKU-1", "Alimentos", null, 8.50m, 12.00m, 5);
+        product.ConvertPrices(4150.25m, decimalPlaces: 0);
+        Assert.Equal(35277m, product.PurchasePrice);
+        Assert.Equal(49803m, product.SalePrice);
+
+        var tinyProduct = new Product("Bolsa", "SKU-2", "Hogar", null, 0m, 1.00m, 5);
+        tinyProduct.ConvertPrices(0.0002m);
+        Assert.Equal(0.01m, tinyProduct.SalePrice);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => product.ConvertPrices(0m));
+        Assert.Throws<ArgumentOutOfRangeException>(() => product.ConvertPrices(-1m));
+
+        var converter = new CurrencyAmountConverter();
+        Assert.Equal("€2,605.10", converter.Convert(new object[] { 2605.10m, "EUR" }, typeof(string), null, CultureInfo.InvariantCulture));
+        Assert.Equal("COP $49,803", converter.Convert(new object[] { 49803m, "COP" }, typeof(string), null, CultureInfo.InvariantCulture));
+        Assert.Equal("$12.00", converter.Convert(new object[] { 12.00m, "USD" }, typeof(string), null, CultureInfo.InvariantCulture));
+    }
+
+    private ServiceProvider BuildSeededProvider(IExchangeRateService? exchangeRateService = null)
+    {
+        var provider = BuildServiceProviderOnly(exchangeRateService);
         DependencyInjection.InitializeDatabase(provider);
         return provider;
     }
 
-    private ServiceProvider BuildServiceProviderOnly()
+    private ServiceProvider BuildServiceProviderOnly(IExchangeRateService? exchangeRateService = null)
     {
         var services = new ServiceCollection();
         services.AddTiendaBodegasServices(_tempDirectory);
+        if (exchangeRateService != null)
+            services.AddSingleton(exchangeRateService);
         return services.BuildServiceProvider();
     }
 
@@ -257,5 +436,45 @@ public class DashboardReportsSettingsTests : IDisposable
         public bool ShowMovementForm(MovementFormViewModel viewModel) => false;
         public bool Confirm(string message, string title) => false;
         public string? ShowSaveFileDialog(string defaultFileName, string filter) => NextSavePath;
+    }
+
+    private sealed class StubExchangeRateService : IExchangeRateService
+    {
+        private readonly IReadOnlyDictionary<(string From, string To), decimal> _rates;
+
+        public StubExchangeRateService(IReadOnlyDictionary<(string From, string To), decimal> rates)
+        {
+            _rates = rates;
+        }
+
+        public Task<ExchangeRateQuote> GetExchangeRateAsync(
+            string fromCurrency,
+            string toCurrency,
+            CancellationToken cancellationToken = default)
+        {
+            var from = fromCurrency.ToUpperInvariant();
+            var to = toCurrency.ToUpperInvariant();
+            var rate = from == to ? 1m : _rates[(from, to)];
+            return Task.FromResult(new ExchangeRateQuote(
+                from,
+                to,
+                rate,
+                new DateOnly(2026, 11, 21),
+                "Stub",
+                IsFallback: false));
+        }
+    }
+
+    private sealed class StubHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _responder;
+
+        public StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responder)
+        {
+            _responder = responder;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(_responder(request));
     }
 }

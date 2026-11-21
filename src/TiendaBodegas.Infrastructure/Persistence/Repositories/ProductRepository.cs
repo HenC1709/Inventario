@@ -87,6 +87,26 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
+    /// Replaces multiple existing products and saves all updates atomically in a single write.
+    /// </summary>
+    public void UpdateRange(IEnumerable<Product> products)
+    {
+        var updated = false;
+        foreach (var product in products)
+        {
+            var index = _context.Products.FindIndex(item => item.Id == product.Id);
+            if (index >= 0)
+            {
+                _context.Products[index] = product;
+                updated = true;
+            }
+        }
+
+        if (updated)
+            _context.SaveJson();
+    }
+
+    /// <summary>
     /// Removes the product with the specified identifier and persists changes to JSON.
     /// </summary>
     public void Delete(int id)

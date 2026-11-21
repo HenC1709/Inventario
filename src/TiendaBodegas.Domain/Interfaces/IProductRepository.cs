@@ -28,6 +28,11 @@ public interface IProductRepository : IRepository<Product>
     void Update(Product product);
 
     /// <summary>
+    /// Updates a batch of existing products in a single persistence operation.
+    /// </summary>
+    void UpdateRange(IEnumerable<Product> products);
+
+    /// <summary>
     /// Deletes the product with the specified identifier from persistence.
     /// </summary>
     void Delete(int id);

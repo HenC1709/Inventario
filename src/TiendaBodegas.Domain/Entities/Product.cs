@@ -113,4 +113,21 @@ public class Product
         SalePrice = salePrice;
         MinStock = minStock;
     }
+
+    /// <summary>
+    /// Converts <see cref="PurchasePrice"/> and <see cref="SalePrice"/> by the specified positive exchange rate.
+    /// </summary>
+    public void ConvertPrices(decimal exchangeRate, int decimalPlaces = 2)
+    {
+        if (exchangeRate <= 0m)
+            throw new ArgumentOutOfRangeException(nameof(exchangeRate), "La tasa de cambio debe ser mayor a cero.");
+
+        if (decimalPlaces is < 0 or > 4)
+            throw new ArgumentOutOfRangeException(nameof(decimalPlaces), "Los decimales deben estar entre 0 y 4.");
+
+        PurchasePrice = Math.Round(PurchasePrice * exchangeRate, decimalPlaces, MidpointRounding.AwayFromZero);
+        var convertedSalePrice = Math.Round(SalePrice * exchangeRate, decimalPlaces, MidpointRounding.AwayFromZero);
+        var minPositiveSalePrice = decimalPlaces == 0 ? 1m : (decimal)Math.Pow(10, -decimalPlaces);
+        SalePrice = SalePrice > 0m && convertedSalePrice == 0m ? minPositiveSalePrice : convertedSalePrice;
+    }
 }

@@ -11,6 +11,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <conv:MovementTitleConverter x:Key="MovementTitleConverter" />
         <conv:MovementSubtitleConverter x:Key="MovementSubtitleConverter" />
+        <conv:CurrencyAmountConverter x:Key="CurrencyAmountConverter" />
     </UserControl.Resources>
 
     <Grid>
@@ -133,11 +134,16 @@
                                         </StackPanel>
 
                                         <TextBlock Grid.Column="1"
-                                                   Text="{Binding TotalAmount, StringFormat='$#,##0.00'}"
                                                    FontSize="16"
                                                    FontWeight="Bold"
                                                    VerticalAlignment="Center"
                                                    Margin="16,0,0,0">
+                                            <TextBlock.Text>
+                                                <MultiBinding Converter="{StaticResource CurrencyAmountConverter}">
+                                                    <Binding Path="TotalAmount" />
+                                                    <Binding Path="DataContext.CurrencyCode" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />

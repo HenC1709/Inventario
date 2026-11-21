@@ -91,17 +91,17 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="PRECIO COMPRA ($)" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,5" />
+                            <TextBlock Text="{Binding PurchasePriceLabel}" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,5" />
                             <TextBox Text="{Binding PurchasePriceText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                                     Tag="0.00"
+                                     Tag="{Binding PricePlaceholder}"
                                      Style="{StaticResource ModernTextBoxStyle}" />
                             <TextBlock Text="{Binding PurchasePriceError}" Style="{StaticResource FieldErrorTextStyle}" />
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="PRECIO VENTA ($)" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,5" />
+                            <TextBlock Text="{Binding SalePriceLabel}" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,5" />
                             <TextBox Text="{Binding SalePriceText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                                     Tag="0.00"
+                                     Tag="{Binding PricePlaceholder}"
                                      Style="{StaticResource ModernTextBoxStyle}" />
                             <TextBlock Text="{Binding SalePriceError}" Style="{StaticResource FieldErrorTextStyle}" />
                         </StackPanel>

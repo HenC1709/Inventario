@@ -5,6 +5,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="580" d:DesignWidth="880">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
     <StackPanel>
         <!-- Cabecera -->
         <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitleTextStyle}" />
@@ -53,6 +56,7 @@
                                   SelectedValue="{Binding SelectedCurrencyCode, Mode=TwoWay}"
                                   SelectedValuePath="Code"
                                   DisplayMemberPath="Label"
+                                  IsEnabled="{Binding IsNotBusy}"
                                   Background="{StaticResource Pearl50Brush}"
                                   Style="{StaticResource ModernComboBoxStyle}" />
                     </StackPanel>
@@ -64,6 +68,7 @@
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Margin="0,0,0,6" />
                         <TextBox Text="{Binding LowStockThresholdText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                                 IsEnabled="{Binding IsNotBusy}"
                                  Background="{StaticResource Pearl50Brush}"
                                  Tag="10"
                                  Style="{StaticResource ModernTextBoxStyle}" />
@@ -71,8 +76,24 @@
                     </StackPanel>
                 </Grid>
 
-                <Button Content="Guardar Cambios"
+                <!-- Aviso de tasa de cambio del día -->
+                <Border Background="{StaticResource Cool50Brush}"
+                        BorderBrush="{StaticResource Cool200Brush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12,9"
+                        Margin="0,14,0,0"
+                        Visibility="{Binding HasExchangeRatePreview, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding ExchangeRatePreviewText}"
+                               FontSize="12"
+                               FontWeight="Medium"
+                               Foreground="{StaticResource Cool700Brush}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <Button Content="{Binding SaveButtonText}"
                         Command="{Binding SaveSettingsCommand}"
+                        IsEnabled="{Binding IsNotBusy}"
                         Style="{StaticResource PrimaryButtonStyle}"
                         HorizontalAlignment="Left"
                         Margin="0,22,0,0" />

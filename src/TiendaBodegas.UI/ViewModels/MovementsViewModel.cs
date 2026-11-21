@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TiendaBodegas.Application.DTOs;
 using TiendaBodegas.Application.Interfaces;
+using TiendaBodegas.Domain.Entities;
 using TiendaBodegas.Domain.Enums;
 using TiendaBodegas.UI.Services;
 
@@ -18,7 +19,14 @@ public partial class MovementsViewModel : ObservableObject
     private readonly IInventoryService _inventoryService;
     private readonly ICatalogService _catalogService;
     private readonly IDialogService _dialogService;
+    private readonly ISettingsService? _settingsService;
     private bool _isUpdatingFilters;
+
+    [ObservableProperty]
+    private string _currencyCode = "USD";
+
+    [ObservableProperty]
+    private string _currencySymbol = "$";
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -56,12 +64,23 @@ public partial class MovementsViewModel : ObservableObject
     public MovementsViewModel(
         IInventoryService inventoryService,
         ICatalogService catalogService,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        ISettingsService? settingsService = null)
     {
         _inventoryService = inventoryService;
         _catalogService = catalogService;
         _dialogService = dialogService;
+        _settingsService = settingsService;
         _selectedMovementTypeFilter = MovementTypeFilters[0];
+
+        if (_settingsService != null)
+        {
+            var settings = _settingsService.GetSettings();
+            CurrencyCode = settings.CurrencyCode;
+            CurrencySymbol = settings.CurrencySymbol;
+            _settingsService.SettingsChanged += OnSettingsChanged;
+        }
+
         LoadData();
     }
 
@@ -222,5 +241,12 @@ public partial class MovementsViewModel : ObservableObject
     {
         IsErrorMessage = true;
         StatusMessage = message;
+    }
+
+    private void OnSettingsChanged(AppSettings settings)
+    {
+        CurrencyCode = settings.CurrencyCode;
+        CurrencySymbol = settings.CurrencySymbol;
+        LoadData();
     }
 }
