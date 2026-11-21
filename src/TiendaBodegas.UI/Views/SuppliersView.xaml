@@ -5,8 +5,23 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:enums="clr-namespace:TiendaBodegas.Domain.Enums;assembly=TiendaBodegas.Domain"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="600" d:DesignWidth="980">
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <Style x:Key="SupplierColumnHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource Stone600Brush}" />
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
         <DataTemplate x:Key="SupplierStatusCellTemplate">
             <Border HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Border.Style>
@@ -34,61 +49,193 @@
                 </TextBlock>
             </Border>
         </DataTemplate>
+
+        <DataTemplate x:Key="SupplierActionsTemplate">
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                <Button ToolTip="Editar"
+                        Style="{StaticResource TableIconButtonStyle}"
+                        Command="{Binding DataContext.EditSupplierByItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}"
+                        Margin="0,0,6,0">
+                    <Path Data="M 11.5,1.5 L 14.5,4.5 L 5,14 L 1.5,14.5 L 2,11 Z M 9.5,3.5 L 12.5,6.5"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          StrokeThickness="1.5"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Width="14"
+                          Height="14"
+                          Stretch="Uniform" />
+                </Button>
+
+                <Button ToolTip="Eliminar"
+                        Style="{StaticResource TableDeleteIconButtonStyle}"
+                        Command="{Binding DataContext.DeleteSupplierByItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}">
+                    <Path Data="M 2,4 L 14,4 M 5.5,4 L 5.5,2 L 10.5,2 L 10.5,4 M 4,4 L 4.7,13.5 L 11.3,13.5 L 12,4 M 6.7,6.5 L 6.7,11 M 9.3,6.5 L 9.3,11"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          StrokeThickness="1.5"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Width="14"
+                          Height="14"
+                          Stretch="Uniform" />
+                </Button>
+            </StackPanel>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
-            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Buscar:"
-                           VerticalAlignment="Center"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="13"
-                           Margin="0,0,8,0" />
-                <TextBox Width="280"
-                         Style="{StaticResource ModernTextBoxStyle}"
-                         Tag="Filtrar por código, razón social o categoría..."
-                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+        <!-- Cabecera -->
+        <Grid Grid.Row="0" Margin="0,0,0,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Proveedores" Style="{StaticResource PageTitleTextStyle}" />
+                <TextBlock Text="Directorio de distribuidores y tiempos de entrega"
+                           Style="{StaticResource PageSubtitleTextStyle}"
+                           Margin="0,3,0,0" />
             </StackPanel>
 
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="+ Nuevo Proveedor"
-                        Command="{Binding CreateSupplierCommand}"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Margin="0,0,8,0" />
-                <Button Content="Editar"
-                        Command="{Binding EditSupplierCommand}"
-                        Style="{StaticResource SecondaryCoolButtonStyle}"
-                        Margin="0,0,8,0" />
-                <Button Content="Eliminar"
-                        Command="{Binding DeleteSupplierCommand}"
-                        Style="{StaticResource DangerSoftButtonStyle}" />
-            </StackPanel>
-        </DockPanel>
+            <Button Grid.Column="1"
+                    Content="+ Nuevo Proveedor"
+                    Command="{Binding CreateSupplierCommand}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    VerticalAlignment="Center" />
+        </Grid>
 
-        <Border Grid.Row="1" Style="{StaticResource StatusBannerBorderStyle}">
+        <!-- Buscador -->
+        <Grid Grid.Row="1" Width="320" HorizontalAlignment="Left" Margin="0,0,0,12">
+            <TextBox Style="{StaticResource ModernTextBoxStyle}"
+                     Padding="12,8,34,8"
+                     Tag="Buscar por código, razón social o categoría..."
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+            <Path Data="M 11,6 A 5,5 0 1 1 1,6 A 5,5 0 1 1 11,6 Z M 9.8,9.8 L 14,14"
+                  Stroke="{StaticResource TextSubtleBrush}"
+                  StrokeThickness="1.7"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"
+                  Width="14"
+                  Height="14"
+                  Stretch="Uniform"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  Margin="0,0,12,0"
+                  IsHitTestVisible="False" />
+        </Grid>
+
+        <!-- Banner de estado -->
+        <Border Grid.Row="2" Style="{StaticResource StatusBannerBorderStyle}">
             <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusBannerTextStyle}" />
         </Border>
 
-        <DataGrid Grid.Row="2"
-                  ItemsSource="{Binding Suppliers}"
-                  SelectedItem="{Binding SelectedSupplier, Mode=TwoWay}"
-                  AutoGenerateColumns="False"
-                  Style="{StaticResource ModernDataGridStyle}">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="CÓDIGO" Binding="{Binding Code}" Width="90" />
-                <DataGridTextColumn Header="RAZÓN SOCIAL" Binding="{Binding Name}" Width="*" />
-                <DataGridTextColumn Header="CONTACTO" Binding="{Binding Contact}" Width="220" />
-                <DataGridTextColumn Header="CATEGORÍA PRINCIPAL" Binding="{Binding MainCategory}" Width="160" />
-                <DataGridTemplateColumn Header="ESTADO"
-                                        CellTemplate="{StaticResource SupplierStatusCellTemplate}"
-                                        Width="120" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- Tarjeta con la tabla -->
+        <Border Grid.Row="3"
+                Style="{StaticResource CardBorderStyle}"
+                Padding="0"
+                VerticalAlignment="Top">
+            <Grid>
+                <Border Background="{StaticResource Pearl100Brush}"
+                        BorderBrush="{StaticResource Pearl300Brush}"
+                        BorderThickness="0,0,0,1"
+                        CornerRadius="15,15,0,0"
+                        Height="42"
+                        VerticalAlignment="Top" />
+
+                <DataGrid ItemsSource="{Binding Suppliers}"
+                          SelectedItem="{Binding SelectedSupplier, Mode=TwoWay}"
+                          AutoGenerateColumns="False"
+                          CanUserSortColumns="False"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="{StaticResource Pearl200Brush}"
+                          HeadersVisibility="Column"
+                          RowHeight="48"
+                          SelectionMode="Single"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          IsReadOnly="True"
+                          ColumnHeaderStyle="{StaticResource SupplierColumnHeaderStyle}"
+                          RowStyle="{StaticResource ModernDataGridRowStyle}"
+                          CellStyle="{StaticResource ModernDataGridCellStyle}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Code}" Width="90">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+                                    <Setter Property="FontSize" Value="12" />
+                                    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="RAZÓN SOCIAL" Binding="{Binding Name}" Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="CONTACTO" Binding="{Binding Contact}" Width="230">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="CATEGORÍA PRINCIPAL" Binding="{Binding MainCategory}" Width="170">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource Stone600Brush}" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTemplateColumn CellTemplate="{StaticResource SupplierStatusCellTemplate}" Width="125">
+                            <DataGridTemplateColumn.Header>
+                                <TextBlock Text="ESTADO" HorizontalAlignment="Center" />
+                            </DataGridTemplateColumn.Header>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn CellTemplate="{StaticResource SupplierActionsTemplate}" Width="105">
+                            <DataGridTemplateColumn.Header>
+                                <TextBlock Text="ACCIONES" HorizontalAlignment="Center" />
+                            </DataGridTemplateColumn.Header>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <TextBlock Text="No se encontraron proveedores con la búsqueda actual."
+                           Foreground="{StaticResource TextSubtleBrush}"
+                           FontSize="13"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Top"
+                           Margin="0,70,0,28"
+                           Visibility="{Binding HasNoSuppliers, Converter={StaticResource BoolToVisibility}}" />
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

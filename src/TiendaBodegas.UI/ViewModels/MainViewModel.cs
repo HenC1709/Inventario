@@ -66,6 +66,8 @@ public partial class MainViewModel : ObservableObject
         _currentViewModel = _inventoryViewModel;
         _inventoryCount = _inventoryViewModel.TotalProductsCount;
         _inventoryViewModel.TotalProductCountChanged += count => InventoryCount = count;
+        _dashboardViewModel.NavigateToInventoryRequested += ShowInventory;
+        _dashboardViewModel.NavigateToCriticalAlertsRequested += ShowInventoryLowStock;
     }
 
     partial void OnActiveSectionChanged(NavigationSection value)
@@ -79,11 +81,12 @@ public partial class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Navigates to the Dashboard section.
+    /// Navigates to the Dashboard section and refreshes its stock distribution and alert widgets.
     /// </summary>
     [RelayCommand]
     public void ShowDashboard()
     {
+        _dashboardViewModel.LoadData();
         ActiveSection = NavigationSection.Dashboard;
         CurrentViewModel = _dashboardViewModel;
         CurrentSectionTitle = "Dashboard";
@@ -96,6 +99,20 @@ public partial class MainViewModel : ObservableObject
     public void ShowInventory()
     {
         _inventoryViewModel.LoadData();
+        InventoryCount = _inventoryViewModel.TotalProductsCount;
+        ActiveSection = NavigationSection.Inventory;
+        CurrentViewModel = _inventoryViewModel;
+        CurrentSectionTitle = "Inventario";
+    }
+
+    /// <summary>
+    /// Navigates to the unified Inventory section filtered to critical low-stock and out-of-stock products.
+    /// </summary>
+    [RelayCommand]
+    public void ShowInventoryLowStock()
+    {
+        _inventoryViewModel.LoadData();
+        _inventoryViewModel.FilterLowStock();
         InventoryCount = _inventoryViewModel.TotalProductsCount;
         ActiveSection = NavigationSection.Inventory;
         CurrentViewModel = _inventoryViewModel;
@@ -127,22 +144,24 @@ public partial class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Navigates to the Reports section.
+    /// Navigates to the Reports section and resets stale banners.
     /// </summary>
     [RelayCommand]
     public void ShowReports()
     {
+        _reportsViewModel.LoadData();
         ActiveSection = NavigationSection.Reports;
         CurrentViewModel = _reportsViewModel;
         CurrentSectionTitle = "Reportes";
     }
 
     /// <summary>
-    /// Navigates to the System Settings section.
+    /// Navigates to the System Settings section and reloads persisted preferences.
     /// </summary>
     [RelayCommand]
     public void ShowSettings()
     {
+        _settingsViewModel.LoadData();
         ActiveSection = NavigationSection.Settings;
         CurrentViewModel = _settingsViewModel;
         CurrentSectionTitle = "Ajustes";

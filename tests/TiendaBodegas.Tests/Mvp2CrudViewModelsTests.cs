@@ -183,6 +183,47 @@ public class Mvp2CrudViewModelsTests : IDisposable
     }
 
     /// <summary>
+    /// Verifies row-level supplier edit/delete commands and <see cref="SuppliersViewModel.HasNoSuppliers"/> transitions.
+    /// </summary>
+    [Fact]
+    public void SuppliersViewModel_RowCommandsAndHasNoSuppliers_UpdateDirectoryCleanly()
+    {
+        var north = _catalogManager.CreateSupplier("Distribuidora Norte", "contacto@norte.com", "Alimentos");
+        var unused = _catalogManager.CreateSupplier("Insumos Hogar", "pedidos@hogar.com", "Hogar");
+        _catalogManager.CreateProduct("Arroz 1kg", "ARR-001", "Alimentos", north.Id, 1.50m, 2.50m);
+
+        var dialogStub = new StubDialogService
+        {
+            ConfirmResult = true,
+            OnShowSupplierForm = form =>
+            {
+                form.Name = "Insumos Hogar Actualizado";
+                form.SaveCommand.Execute(null);
+                return true;
+            }
+        };
+        var viewModel = new SuppliersViewModel(_catalogManager, dialogStub);
+
+        Assert.False(viewModel.HasNoSuppliers);
+
+        viewModel.EditSupplierByItemCommand.Execute(unused);
+        Assert.False(viewModel.IsErrorMessage);
+        Assert.Contains(viewModel.Suppliers, s => s.Id == unused.Id && s.Name == "Insumos Hogar Actualizado");
+
+        viewModel.DeleteSupplierByItemCommand.Execute(north);
+        Assert.True(viewModel.IsErrorMessage);
+        Assert.Contains("productos asociados", viewModel.StatusMessage);
+
+        var updatedUnused = viewModel.Suppliers.First(s => s.Id == unused.Id);
+        viewModel.DeleteSupplierByItemCommand.Execute(updatedUnused);
+        Assert.False(viewModel.IsErrorMessage);
+        Assert.Single(viewModel.Suppliers);
+
+        viewModel.SearchText = "SinCoincidencias";
+        Assert.True(viewModel.HasNoSuppliers);
+    }
+
+    /// <summary>
     /// Cleans up the temporary test directory after execution.
     /// </summary>
     public void Dispose()
@@ -197,8 +238,9 @@ public class Mvp2CrudViewModelsTests : IDisposable
     private sealed class StubDialogService : IDialogService
     {
         public bool ConfirmResult { get; set; }
+        public Func<SupplierFormViewModel, bool>? OnShowSupplierForm { get; set; }
         public bool ShowProductForm(ProductFormViewModel viewModel) => false;
-        public bool ShowSupplierForm(SupplierFormViewModel viewModel) => false;
+        public bool ShowSupplierForm(SupplierFormViewModel viewModel) => OnShowSupplierForm?.Invoke(viewModel) ?? false;
         public bool ShowMovementForm(MovementFormViewModel viewModel) => false;
         public bool Confirm(string message, string title) => ConfirmResult;
         public string? ShowSaveFileDialog(string defaultFileName, string filter) => null;

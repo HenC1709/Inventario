@@ -6,11 +6,13 @@ using TiendaBodegas.Application.Interfaces;
 namespace TiendaBodegas.Application.Services;
 
 /// <summary>
-/// Generates RFC-4180 compliant CSV content from <see cref="ProductStockSummaryDto"/> inventory records.
+/// Generates RFC-4180 compliant CSV content from inventory, valuation, and low-rotation projections.
 /// </summary>
 public class InventoryCsvExporter : IInventoryExportService
 {
-    private const string CsvHeader = "SKU,Producto,Categoría,Proveedor,Precio Compra,Precio Venta,Stock,Stock Mínimo,Estado";
+    private const string InventoryHeader = "SKU,Producto,Categoría,Proveedor,Precio Compra,Precio Venta,Stock,Stock Mínimo,Estado";
+    private const string ValuationHeader = "Categoría,Productos,Stock Total,Costo Compra Total,Valor Venta Total,Margen Estimado";
+    private const string LowRotationHeader = "SKU,Producto,Categoría,Stock Actual,Último Movimiento,Días Sin Rotación";
 
     /// <summary>
     /// Builds a CSV document containing headers and one formatted row per inventory item.
@@ -20,7 +22,7 @@ public class InventoryCsvExporter : IInventoryExportService
         ArgumentNullException.ThrowIfNull(items);
 
         var builder = new StringBuilder();
-        builder.AppendLine(CsvHeader);
+        builder.AppendLine(InventoryHeader);
 
         foreach (var item in items)
         {
@@ -35,6 +37,85 @@ public class InventoryCsvExporter : IInventoryExportService
                 item.TotalStock.ToString(CultureInfo.InvariantCulture),
                 item.MinStock.ToString(CultureInfo.InvariantCulture),
                 EscapeCsvField(item.StockStatusLabel)
+            };
+
+            builder.AppendLine(string.Join(",", fields));
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// Builds a CSV document summarizing category valuation and a <c>TOTAL</c> summary row when rows exist.
+    /// </summary>
+    public string GenerateValuationCsv(IEnumerable<CategoryValuationDto> categories)
+    {
+        ArgumentNullException.ThrowIfNull(categories);
+
+        var rows = categories.ToList();
+        var builder = new StringBuilder();
+        builder.AppendLine(ValuationHeader);
+
+        foreach (var row in rows)
+        {
+            var fields = new[]
+            {
+                EscapeCsvField(row.Category),
+                row.ProductCount.ToString(CultureInfo.InvariantCulture),
+                row.TotalUnits.ToString(CultureInfo.InvariantCulture),
+                row.TotalPurchaseCost.ToString("0.00", CultureInfo.InvariantCulture),
+                row.TotalSaleValue.ToString("0.00", CultureInfo.InvariantCulture),
+                row.EstimatedMargin.ToString("0.00", CultureInfo.InvariantCulture)
+            };
+
+            builder.AppendLine(string.Join(",", fields));
+        }
+
+        if (rows.Count > 0)
+        {
+            var totalFields = new[]
+            {
+                "TOTAL",
+                rows.Sum(r => r.ProductCount).ToString(CultureInfo.InvariantCulture),
+                rows.Sum(r => r.TotalUnits).ToString(CultureInfo.InvariantCulture),
+                rows.Sum(r => r.TotalPurchaseCost).ToString("0.00", CultureInfo.InvariantCulture),
+                rows.Sum(r => r.TotalSaleValue).ToString("0.00", CultureInfo.InvariantCulture),
+                rows.Sum(r => r.EstimatedMargin).ToString("0.00", CultureInfo.InvariantCulture)
+            };
+
+            builder.AppendLine(string.Join(",", totalFields));
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// Builds a CSV document listing low-rotation products and their last movement timestamp.
+    /// </summary>
+    public string GenerateLowRotationCsv(IEnumerable<LowRotationProductDto> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+
+        var builder = new StringBuilder();
+        builder.AppendLine(LowRotationHeader);
+
+        foreach (var item in items)
+        {
+            var lastMovementText = item.LastMovementDate.HasValue
+                ? item.LastMovementDate.Value.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+                : "Sin movimientos";
+            var daysText = item.DaysWithoutMovement.HasValue
+                ? item.DaysWithoutMovement.Value.ToString(CultureInfo.InvariantCulture)
+                : "—";
+
+            var fields = new[]
+            {
+                EscapeCsvField(item.ProductSku),
+                EscapeCsvField(item.ProductName),
+                EscapeCsvField(item.Category),
+                item.CurrentStock.ToString(CultureInfo.InvariantCulture),
+                EscapeCsvField(lastMovementText),
+                EscapeCsvField(daysText)
             };
 
             builder.AppendLine(string.Join(",", fields));

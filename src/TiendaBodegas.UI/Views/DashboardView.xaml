@@ -4,20 +4,161 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="500" d:DesignWidth="880">
-    <StackPanel>
-        <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitleTextStyle}" />
-        <TextBlock Text="{Binding Subtitle}" Style="{StaticResource PageSubtitleTextStyle}" Margin="0,4,0,24" />
+             d:DesignHeight="600" d:DesignWidth="980">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
-        <Border Style="{StaticResource CardBorderStyle}" Padding="24">
-            <StackPanel>
-                <TextBlock Text="Distribución de Stock y Alertas de Reposición"
-                           Style="{StaticResource SectionHeadingTextStyle}" />
-                <TextBlock Text="Esta vista ejecutiva se completará en el bloque R7 con gráficos de categorías y alertas de reposición en vivo."
-                           Style="{StaticResource PageSubtitleTextStyle}"
-                           Margin="0,8,0,0"
-                           TextWrapping="Wrap" />
-            </StackPanel>
-        </Border>
-    </StackPanel>
+        <Style x:Key="TextLinkButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="Foreground" Value="{StaticResource Cool600Brush}" />
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource Cool800Brush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            <!-- Cabecera -->
+            <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitleTextStyle}" />
+            <TextBlock Text="{Binding Subtitle}"
+                       Style="{StaticResource PageSubtitleTextStyle}"
+                       Margin="0,3,0,22" />
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Panel Izquierdo: Distribución de Stock por Categoría -->
+                <Border Grid.Column="0"
+                        Style="{StaticResource CardBorderStyle}"
+                        Padding="24"
+                        VerticalAlignment="Top">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,18">
+                            <TextBlock Text="Distribución de Stock por Categoría"
+                                       Style="{StaticResource SectionHeadingTextStyle}"
+                                       VerticalAlignment="Center" />
+                            <Button Content="Ir al inventario →"
+                                    Command="{Binding GoToInventoryCommand}"
+                                    Style="{StaticResource TextLinkButtonStyle}"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center" />
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding CategoryDistributions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,16">
+                                        <Grid Margin="0,0,0,6">
+                                            <TextBlock Text="{Binding Category}"
+                                                       FontSize="13"
+                                                       FontWeight="Medium"
+                                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBlock Text="{Binding UnitsLabel}"
+                                                       FontSize="13"
+                                                       FontWeight="Bold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       HorizontalAlignment="Right" />
+                                        </Grid>
+                                        <ProgressBar Style="{StaticResource TerracottaProgressBarStyle}"
+                                                     Value="{Binding Percentage, Mode=OneWay}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="No hay categorías con productos registrados todavía."
+                                   Foreground="{StaticResource TextSubtleBrush}"
+                                   FontSize="13"
+                                   Visibility="{Binding HasNoCategories, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Panel Derecho: Alertas de Reposición -->
+                <Border Grid.Column="2"
+                        Style="{StaticResource WarmPanelBorderStyle}"
+                        Padding="24"
+                        VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock Text="Alertas de Reposición"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource Warm700Brush}"
+                                   Margin="0,0,0,16" />
+
+                        <ItemsControl ItemsSource="{Binding CriticalAlerts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#CCFFFFFF"
+                                            BorderBrush="{StaticResource Warm200Brush}"
+                                            BorderThickness="1"
+                                            CornerRadius="12"
+                                            Padding="12,10"
+                                            Margin="0,0,0,10">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding ProductName}"
+                                                       FontSize="13"
+                                                       FontWeight="Medium"
+                                                       Foreground="{StaticResource Stone800Brush}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,10,0" />
+
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding UnitsLabel}"
+                                                       FontSize="12"
+                                                       FontWeight="Bold"
+                                                       Foreground="{StaticResource Warm700Brush}"
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Todo el inventario está en niveles óptimos."
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="13"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,8"
+                                   Visibility="{Binding HasNoAlerts, Converter={StaticResource BoolToVisibility}}" />
+
+                        <Button Content="Revisar productos críticos"
+                                Command="{Binding ReviewCriticalProductsCommand}"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,12,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

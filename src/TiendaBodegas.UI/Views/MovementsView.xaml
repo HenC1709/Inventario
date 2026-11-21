@@ -3,8 +3,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:conv="clr-namespace:TiendaBodegas.UI.Converters"
+             xmlns:enums="clr-namespace:TiendaBodegas.Domain.Enums;assembly=TiendaBodegas.Domain"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="600" d:DesignWidth="980">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <conv:MovementTitleConverter x:Key="MovementTitleConverter" />
+        <conv:MovementSubtitleConverter x:Key="MovementSubtitleConverter" />
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -13,25 +21,34 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
-            <TextBlock DockPanel.Dock="Left"
-                       Text="Historial de entradas y salidas de inventario"
-                       VerticalAlignment="Center"
-                       Style="{StaticResource PageSubtitleTextStyle}" />
+        <!-- Cabecera -->
+        <Grid Grid.Row="0" Margin="0,0,0,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="+ Entrada"
-                        Command="{Binding RegisterEntryCommand}"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Margin="0,0,8,0" />
-                <Button Content="- Salida / Venta"
-                        Command="{Binding RegisterExitCommand}"
-                        Style="{StaticResource SecondaryCoolButtonStyle}" />
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Registro de Ventas y Salidas" Style="{StaticResource PageTitleTextStyle}" />
+                <TextBlock Text="Historial reciente de movimientos de inventario"
+                           Style="{StaticResource PageSubtitleTextStyle}"
+                           Margin="0,3,0,0" />
             </StackPanel>
-        </DockPanel>
 
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="+ Registrar Entrada"
+                        Command="{Binding RegisterEntryCommand}"
+                        Style="{StaticResource SecondaryCoolButtonStyle}"
+                        Margin="0,0,10,0" />
+                <Button Content="+ Registrar Venta / Salida"
+                        Command="{Binding RegisterExitCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Filtros -->
         <Border Grid.Row="1"
-                Background="{StaticResource Pearl100Brush}"
+                Background="{StaticResource SurfaceWhiteBrush}"
                 BorderBrush="{StaticResource Pearl300Brush}"
                 BorderThickness="1"
                 CornerRadius="12"
@@ -66,7 +83,7 @@
                                Foreground="{StaticResource TextSecondaryBrush}"
                                FontSize="13"
                                Margin="0,0,6,0" />
-                    <ComboBox Width="125"
+                    <ComboBox Width="140"
                               Style="{StaticResource ModernComboBoxStyle}"
                               ItemsSource="{Binding MovementTypeFilters}"
                               SelectedItem="{Binding SelectedMovementTypeFilter, Mode=TwoWay}"
@@ -81,25 +98,71 @@
             </WrapPanel>
         </Border>
 
+        <!-- Banner de estado -->
         <Border Grid.Row="2" Style="{StaticResource StatusBannerBorderStyle}">
             <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusBannerTextStyle}" />
         </Border>
 
-        <DataGrid Grid.Row="3"
-                  ItemsSource="{Binding Movements}"
-                  AutoGenerateColumns="False"
-                  Style="{StaticResource ModernDataGridStyle}">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="55" />
-                <DataGridTextColumn Header="FECHA" Binding="{Binding Date, StringFormat=dd/MM/yyyy HH:mm}" Width="135" />
-                <DataGridTextColumn Header="TIPO" Binding="{Binding MovementTypeLabel}" Width="85" />
-                <DataGridTextColumn Header="SKU" Binding="{Binding ProductSku}" Width="105" />
-                <DataGridTextColumn Header="PRODUCTO" Binding="{Binding ProductName}" Width="210" />
-                <DataGridTextColumn Header="CANTIDAD" Binding="{Binding Quantity}" Width="85" />
-                <DataGridTextColumn Header="PRECIO UNIT." Binding="{Binding UnitPrice, StringFormat=C2}" Width="105" />
-                <DataGridTextColumn Header="TOTAL" Binding="{Binding TotalAmount, StringFormat=C2}" Width="105" />
-                <DataGridTextColumn Header="OBSERVACIONES" Binding="{Binding Notes}" Width="*" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- Tarjeta con filas limpias -->
+        <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}" Padding="0">
+            <Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Movements}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource Pearl200Brush}"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="24,16">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Converter={StaticResource MovementTitleConverter}}"
+                                                       FontSize="15"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Converter={StaticResource MovementSubtitleConverter}}"
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       Margin="0,3,0,0"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding TotalAmount, StringFormat='$#,##0.00'}"
+                                                   FontSize="16"
+                                                   FontWeight="Bold"
+                                                   VerticalAlignment="Center"
+                                                   Margin="16,0,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding MovementType}" Value="{x:Static enums:MovementType.Entry}">
+                                                            <Setter Property="Foreground" Value="{StaticResource Cool600Brush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <TextBlock Text="No hay movimientos registrados con los filtros seleccionados."
+                           Foreground="{StaticResource TextSubtleBrush}"
+                           FontSize="13"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Visibility="{Binding HasNoMovements, Converter={StaticResource BoolToVisibility}}" />
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

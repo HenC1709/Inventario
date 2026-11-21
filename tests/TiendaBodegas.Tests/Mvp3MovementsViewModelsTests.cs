@@ -1,9 +1,11 @@
 using System.IO;
+using TiendaBodegas.Application.DTOs;
 using TiendaBodegas.Application.Interfaces;
 using TiendaBodegas.Application.Services;
 using TiendaBodegas.Domain.Enums;
 using TiendaBodegas.Infrastructure.Persistence.Json;
 using TiendaBodegas.Infrastructure.Persistence.Repositories;
+using TiendaBodegas.UI.Converters;
 using TiendaBodegas.UI.Services;
 using TiendaBodegas.UI.ViewModels;
 using Xunit;
@@ -246,12 +248,42 @@ public class Mvp3MovementsViewModelsTests : IDisposable
         movementsVm.FromDate = DateTime.Today.AddDays(1);
         movementsVm.ToDate = DateTime.Today;
         Assert.Empty(movementsVm.Movements);
+        Assert.True(movementsVm.HasNoMovements);
         Assert.True(movementsVm.IsErrorMessage);
         Assert.Contains("posterior", movementsVm.StatusMessage);
 
         movementsVm.ClearFiltersCommand.Execute(null);
         Assert.False(movementsVm.IsErrorMessage);
+        Assert.False(movementsVm.HasNoMovements);
         Assert.Equal(2, movementsVm.Movements.Count);
+    }
+
+    /// <summary>
+    /// Verifies <see cref="MovementTextFormatter"/> title, relative date, singular/plural units, and note formatting.
+    /// </summary>
+    [Fact]
+    public void MovementTextFormatter_FormatsTitlesDatesUnitsAndNotesCorrectly()
+    {
+        var now = new DateTime(2026, 11, 21, 17, 30, 0);
+
+        var exitToday = new StockMovementDisplayDto(
+            7, now, MovementType.Exit, "Salida", 1, "SKU-1", "Café Espresso", "#1 — Café Espresso",
+            5, 12.00m, 60.00m, "Orden #V-2041 — Salida de Stock");
+
+        var entryYesterday = new StockMovementDisplayDto(
+            2, now.AddDays(-1).Date.AddHours(9).AddMinutes(15), MovementType.Entry, "Entrada", 2, "SKU-2", "Aceite Oliva", "#2 — Aceite Oliva",
+            1, 12.00m, 12.00m, "Reposición proveedor");
+
+        var olderExit = new StockMovementDisplayDto(
+            1, new DateTime(2026, 11, 10, 14, 5, 0), MovementType.Exit, "Salida", 3, "SKU-3", "Té Verde", "#3 — Té Verde",
+            3, 6.90m, 20.70m, "");
+
+        Assert.Equal("Venta #V-0007 — Salida de Stock", MovementTextFormatter.BuildTitle(exitToday));
+        Assert.Equal("Compra #C-0002 — Entrada de Stock", MovementTextFormatter.BuildTitle(entryYesterday));
+
+        Assert.Equal("Hoy, 05:30 PM • 5 unidades (Café Espresso)", MovementTextFormatter.BuildSubtitle(exitToday, now));
+        Assert.Equal("Ayer, 09:15 AM • 1 unidad (Aceite Oliva) • Reposición proveedor", MovementTextFormatter.BuildSubtitle(entryYesterday, now));
+        Assert.Equal("10/11/2026, 02:05 PM • 3 unidades (Té Verde)", MovementTextFormatter.BuildSubtitle(olderExit, now));
     }
 
     /// <summary>

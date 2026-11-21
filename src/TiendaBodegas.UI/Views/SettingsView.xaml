@@ -4,19 +4,78 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="500" d:DesignWidth="880">
+             d:DesignHeight="580" d:DesignWidth="880">
     <StackPanel>
+        <!-- Cabecera -->
         <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitleTextStyle}" />
-        <TextBlock Text="{Binding Subtitle}" Style="{StaticResource PageSubtitleTextStyle}" Margin="0,4,0,24" />
+        <TextBlock Text="{Binding Subtitle}"
+                   Style="{StaticResource PageSubtitleTextStyle}"
+                   Margin="0,3,0,20" />
 
-        <Border Style="{StaticResource CardBorderStyle}" Padding="24" MaxWidth="620" HorizontalAlignment="Left">
-            <StackPanel>
-                <TextBlock Text="Preferencias del Almacén"
-                           Style="{StaticResource SectionHeadingTextStyle}" />
-                <TextBlock Text="Esta pantalla se completará en el bloque R9 para configurar nombre del almacén, moneda principal y umbral de bajo stock en settings.json."
-                           Style="{StaticResource PageSubtitleTextStyle}"
-                           Margin="0,8,0,0"
-                           TextWrapping="Wrap" />
+        <!-- Banner de estado -->
+        <Border Style="{StaticResource StatusBannerBorderStyle}"
+                MaxWidth="660"
+                HorizontalAlignment="Left">
+            <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusBannerTextStyle}" />
+        </Border>
+
+        <!-- Tarjeta de Formulario -->
+        <Border Style="{StaticResource CardBorderStyle}"
+                MaxWidth="660"
+                HorizontalAlignment="Left"
+                Padding="24">
+            <StackPanel Width="612">
+                <TextBlock Text="Nombre del Negocio / Almacén"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,0,0,6" />
+                <TextBox Text="{Binding BusinessName, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                         Background="{StaticResource Pearl50Brush}"
+                         Tag="Ej. Almacén Central"
+                         Style="{StaticResource ModernTextBoxStyle}" />
+                <TextBlock Text="{Binding BusinessNameError}" Style="{StaticResource FieldErrorTextStyle}" />
+
+                <Grid Margin="0,18,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Moneda Principal"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="0,0,0,6" />
+                        <ComboBox ItemsSource="{Binding CurrencyOptions}"
+                                  SelectedValue="{Binding SelectedCurrencyCode, Mode=TwoWay}"
+                                  SelectedValuePath="Code"
+                                  DisplayMemberPath="Label"
+                                  Background="{StaticResource Pearl50Brush}"
+                                  Style="{StaticResource ModernComboBoxStyle}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Umbral de Bajo Stock"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="0,0,0,6" />
+                        <TextBox Text="{Binding LowStockThresholdText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                                 Background="{StaticResource Pearl50Brush}"
+                                 Tag="10"
+                                 Style="{StaticResource ModernTextBoxStyle}" />
+                        <TextBlock Text="{Binding LowStockThresholdError}" Style="{StaticResource FieldErrorTextStyle}" />
+                    </StackPanel>
+                </Grid>
+
+                <Button Content="Guardar Cambios"
+                        Command="{Binding SaveSettingsCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        HorizontalAlignment="Left"
+                        Margin="0,22,0,0" />
             </StackPanel>
         </Border>
     </StackPanel>

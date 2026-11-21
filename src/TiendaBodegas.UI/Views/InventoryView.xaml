@@ -257,7 +257,7 @@
                                    FontWeight="Bold"
                                    Foreground="{StaticResource TextPrimaryBrush}"
                                    VerticalAlignment="Bottom" />
-                        <TextBlock Text="USD"
+                        <TextBlock Text="{Binding CurrencyCode}"
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource TextMutedBrush}"

@@ -791,6 +791,49 @@
         <Setter Property="CellStyle" Value="{StaticResource ModernDataGridCellStyle}" />
     </Style>
 
+    <!-- ==================== MODAL SHARED PARTS ==================== -->
+    <Style x:Key="ModalCloseButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource TextSubtleBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="CloseBd"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="8">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="CloseBd" Property="Background" Value="{StaticResource Pearl200Brush}" />
+                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="FormErrorBannerStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource DangerBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DangerBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="Margin" Value="0,12,0,0" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding FormError}" Value="">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- ==================== MODALS ==================== -->
     <Style x:Key="ModalSurfaceBorderStyle" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource Pearl50Brush}" />
@@ -805,6 +848,31 @@
         <Setter Property="BorderThickness" Value="0,0,0,1" />
         <Setter Property="CornerRadius" Value="16,16,0,0" />
         <Setter Property="Padding" Value="24,16" />
+    </Style>
+
+    <!-- ==================== PROGRESS BAR ==================== -->
+    <Style x:Key="TerracottaProgressBarStyle" TargetType="ProgressBar">
+        <Setter Property="Height" Value="10" />
+        <Setter Property="Minimum" Value="0" />
+        <Setter Property="Maximum" Value="100" />
+        <Setter Property="Background" Value="{StaticResource Pearl200Brush}" />
+        <Setter Property="Foreground" Value="{StaticResource Warm500Brush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Grid x:Name="TemplateRoot">
+                        <Border x:Name="PART_Track"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="5" />
+                        <Border x:Name="PART_Indicator"
+                                Background="{TemplateBinding Foreground}"
+                                CornerRadius="5"
+                                HorizontalAlignment="Left" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary>

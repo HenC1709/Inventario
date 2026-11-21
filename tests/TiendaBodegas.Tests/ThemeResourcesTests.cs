@@ -65,6 +65,7 @@ public class ThemeResourcesTests
                 Assert.IsType<Style>(controls["ModernDataGridStyle"]);
                 Assert.IsType<Style>(controls["KpiPrimaryFocusCardStyle"]);
                 Assert.IsType<Style>(controls["KpiAlertCardStyle"]);
+                Assert.IsType<Style>(controls["TerracottaProgressBarStyle"]);
             }
             catch (Exception ex)
             {

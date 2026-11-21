@@ -147,6 +147,7 @@ public partial class MovementsViewModel : ObservableObject
         if (FromDate.HasValue && ToDate.HasValue && FromDate.Value.Date > ToDate.Value.Date)
         {
             Movements.Clear();
+            OnPropertyChanged(nameof(HasNoMovements));
             SetErrorStatus(InvalidDateRangeMessage);
             return;
         }
@@ -166,7 +167,14 @@ public partial class MovementsViewModel : ObservableObject
         {
             Movements.Add(movement);
         }
+
+        OnPropertyChanged(nameof(HasNoMovements));
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the current filters yielded no movements.
+    /// </summary>
+    public bool HasNoMovements => Movements.Count == 0;
 
     /// <summary>
     /// Validates catalog prerequisites, opens the movement registration modal, and updates status feedback on completion.

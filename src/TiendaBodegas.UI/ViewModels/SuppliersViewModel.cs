@@ -97,7 +97,7 @@ public partial class SuppliersViewModel : ObservableObject
 
         ClearStatus();
         var supplier = SelectedSupplier;
-        if (!_dialogService.Confirm($"¿Desea eliminar el proveedor '{supplier.Name}'?", "Confirmar eliminación"))
+        if (!_dialogService.Confirm($"Se eliminará \"{supplier.Name}\" ({supplier.Code}) del directorio de proveedores.", "¿Eliminar proveedor?"))
             return;
 
         try
@@ -112,6 +112,37 @@ public partial class SuppliersViewModel : ObservableObject
             SetErrorStatus(ex.Message);
         }
     }
+
+    /// <summary>
+    /// Opens the modal form to edit the supplier represented by the clicked table row.
+    /// </summary>
+    [RelayCommand]
+    public void EditSupplierByItem(Supplier? item)
+    {
+        if (item == null)
+            return;
+
+        SelectedSupplier = item;
+        EditSupplier();
+    }
+
+    /// <summary>
+    /// Requests confirmation and deletes the supplier represented by the clicked table row.
+    /// </summary>
+    [RelayCommand]
+    public void DeleteSupplierByItem(Supplier? item)
+    {
+        if (item == null)
+            return;
+
+        SelectedSupplier = item;
+        DeleteSupplier();
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the current search yielded no suppliers.
+    /// </summary>
+    public bool HasNoSuppliers => Suppliers.Count == 0;
 
     /// <summary>
     /// Updates the filtered list whenever the search text changes.
@@ -142,6 +173,8 @@ public partial class SuppliersViewModel : ObservableObject
         {
             Suppliers.Add(supplier);
         }
+
+        OnPropertyChanged(nameof(HasNoSuppliers));
     }
 
     /// <summary>

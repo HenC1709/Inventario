@@ -6,7 +6,7 @@ using TiendaBodegas.Domain.Enums;
 namespace TiendaBodegas.Infrastructure.Persistence.Json;
 
 /// <summary>
-/// JSON-backed data context managing in-memory collections and atomic persistence under the data directory.
+/// JSON-backed data context managing in-memory collections, settings, and atomic persistence under the data directory.
 /// </summary>
 public class JsonDataContext
 {
@@ -15,6 +15,7 @@ public class JsonDataContext
     public List<Supplier> Suppliers { get; private set; } = new();
     public List<Product> Products { get; private set; } = new();
     public List<StockMovement> StockMovements { get; private set; } = new();
+    public AppSettings Settings { get; private set; } = new();
 
     /// <summary>
     /// Initializes a new JSON data context targeting the given directory, or the default application data folder.
@@ -25,7 +26,15 @@ public class JsonDataContext
     }
 
     /// <summary>
-    /// Persists suppliers, products, and stock movements to JSON files using atomic file replacement.
+    /// Replaces the in-memory settings instance prior to persistence.
+    /// </summary>
+    public void UpdateSettings(AppSettings settings)
+    {
+        Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+    }
+
+    /// <summary>
+    /// Persists suppliers, products, stock movements, and settings to JSON files using atomic file replacement.
     /// </summary>
     public void SaveJson()
     {
@@ -36,10 +45,11 @@ public class JsonDataContext
         WriteFileAtomically(Path.Combine(_dataDirectory, "proveedores.json"), JsonSerializer.Serialize(Suppliers, options));
         WriteFileAtomically(Path.Combine(_dataDirectory, "productos.json"), JsonSerializer.Serialize(Products, options));
         WriteFileAtomically(Path.Combine(_dataDirectory, "tickets.json"), JsonSerializer.Serialize(StockMovements, options));
+        WriteFileAtomically(Path.Combine(_dataDirectory, "settings.json"), JsonSerializer.Serialize(Settings, options));
     }
 
     /// <summary>
-    /// Loads suppliers, products, and single-warehouse stock movements from the JSON files in the configured data directory.
+    /// Loads suppliers, products, single-warehouse stock movements, and settings from JSON files in the data directory.
     /// </summary>
     public void LoadJson()
     {
@@ -48,6 +58,7 @@ public class JsonDataContext
         var suppliersPath = Path.Combine(_dataDirectory, "proveedores.json");
         var productsPath = Path.Combine(_dataDirectory, "productos.json");
         var movementsPath = Path.Combine(_dataDirectory, "tickets.json");
+        var settingsPath = Path.Combine(_dataDirectory, "settings.json");
 
         if (File.Exists(suppliersPath))
         {
@@ -68,6 +79,12 @@ public class JsonDataContext
             StockMovements = loadedMovements
                 .Where(m => m.MovementType is MovementType.Entry or MovementType.Exit)
                 .ToList();
+        }
+
+        if (File.Exists(settingsPath))
+        {
+            var json = File.ReadAllText(settingsPath);
+            Settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new();
         }
     }
 

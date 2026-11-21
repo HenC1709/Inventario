@@ -26,8 +26,10 @@ public static class DependencyInjection
         services.AddSingleton<ISupplierRepository, SupplierRepository>();
         services.AddSingleton<IProductRepository, ProductRepository>();
         services.AddSingleton<IStockMovementRepository, StockMovementRepository>();
+        services.AddSingleton<ISettingsRepository, SettingsRepository>();
         services.AddSingleton<IInventoryService, InventoryManager>();
         services.AddSingleton<ICatalogService, CatalogManager>();
+        services.AddSingleton<ISettingsService, SettingsManager>();
         services.AddSingleton<IInventoryExportService, InventoryCsvExporter>();
         services.AddSingleton<IDialogService, DialogService>();
 

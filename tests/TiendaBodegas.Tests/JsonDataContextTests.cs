@@ -99,6 +99,7 @@ public class JsonDataContextTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_tempDirectory, "proveedores.json")));
         Assert.True(File.Exists(Path.Combine(_tempDirectory, "productos.json")));
         Assert.True(File.Exists(Path.Combine(_tempDirectory, "tickets.json")));
+        Assert.True(File.Exists(Path.Combine(_tempDirectory, "settings.json")));
         Assert.Empty(Directory.GetFiles(_tempDirectory, "*.tmp"));
     }
 

@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TiendaBodegas.Application.DTOs;
 using TiendaBodegas.Application.Interfaces;
+using TiendaBodegas.Domain.Entities;
 using TiendaBodegas.UI.Services;
 
 namespace TiendaBodegas.UI.ViewModels;
@@ -32,6 +33,7 @@ public partial class InventoryViewModel : ObservableObject
     private readonly IInventoryService _inventoryService;
     private readonly IInventoryExportService _exportService;
     private readonly IDialogService _dialogService;
+    private readonly ISettingsService? _settingsService;
 
     private List<ProductStockSummaryDto> _allItems = new();
     private List<ProductStockSummaryDto> _filteredItems = new();
@@ -79,6 +81,14 @@ public partial class InventoryViewModel : ObservableObject
     private decimal _estimatedTotalValue;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FormattedEstimatedValue))]
+    private string _currencyCode = "USD";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FormattedEstimatedValue))]
+    private string _currencySymbol = "$";
+
+    [ObservableProperty]
     private string _statusMessage = string.Empty;
 
     [ObservableProperty]
@@ -122,9 +132,10 @@ public partial class InventoryViewModel : ObservableObject
     public ObservableCollection<PageNumberItem> PageNumbers { get; } = new();
 
     /// <summary>
-    /// Gets the total inventory sale valuation formatted as USD currency.
+    /// Gets the total inventory sale valuation formatted with the active currency symbol.
     /// </summary>
-    public string FormattedEstimatedValue => EstimatedTotalValue.ToString("$#,##0.00", CultureInfo.GetCultureInfo("en-US"));
+    public string FormattedEstimatedValue =>
+        CurrencySymbol + EstimatedTotalValue.ToString("#,##0.00", CultureInfo.GetCultureInfo("en-US"));
 
     /// <summary>
     /// Gets the attention badge caption shown inside the low-stock KPI card.
@@ -187,13 +198,21 @@ public partial class InventoryViewModel : ObservableObject
         ICatalogService catalogService,
         IInventoryService inventoryService,
         IInventoryExportService exportService,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        ISettingsService? settingsService = null)
     {
         _catalogService = catalogService;
         _inventoryService = inventoryService;
         _exportService = exportService;
         _dialogService = dialogService;
+        _settingsService = settingsService;
         _selectedStatusFilter = StatusFilters[0];
+
+        if (_settingsService != null)
+        {
+            ApplySettings(_settingsService.GetSettings());
+            _settingsService.SettingsChanged += ApplySettings;
+        }
 
         LoadData();
     }
@@ -374,7 +393,8 @@ public partial class InventoryViewModel : ObservableObject
     public void CreateProduct()
     {
         ClearStatus();
-        var formViewModel = new ProductFormViewModel(_catalogService, _inventoryService);
+        var defaultMinStock = _settingsService?.GetSettings().DefaultLowStockThreshold ?? 10;
+        var formViewModel = new ProductFormViewModel(_catalogService, _inventoryService, defaultMinStock: defaultMinStock);
         if (_dialogService.ShowProductForm(formViewModel))
         {
             LoadData();
@@ -627,5 +647,11 @@ public partial class InventoryViewModel : ObservableObject
     {
         IsErrorMessage = true;
         StatusMessage = message;
+    }
+
+    private void ApplySettings(AppSettings settings)
+    {
+        CurrencyCode = settings.CurrencyCode;
+        CurrencySymbol = settings.CurrencySymbol;
     }
 }

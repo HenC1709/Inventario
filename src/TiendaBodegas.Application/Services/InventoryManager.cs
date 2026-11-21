@@ -7,7 +7,7 @@ using TiendaBodegas.Domain.Interfaces;
 namespace TiendaBodegas.Application.Services;
 
 /// <summary>
-/// Manages single-warehouse inventory entries, exits, and stock summary projections.
+/// Manages single-warehouse inventory entries, exits, stock summary projections, and valuation/rotation reports.
 /// </summary>
 public class InventoryManager : IInventoryService
 {
@@ -229,6 +229,76 @@ public class InventoryManager : IInventoryService
         })
         .OrderBy(p => p.ProductName, StringComparer.OrdinalIgnoreCase)
         .ToList();
+    }
+
+    /// <summary>
+    /// Builds an inventory valuation summary grouped by category comparing purchase cost and sale valuation.
+    /// </summary>
+    public IEnumerable<CategoryValuationDto> GetCategoryValuationReport()
+    {
+        return GetProductStockSummary()
+            .GroupBy(item => string.IsNullOrWhiteSpace(item.Category) ? "Sin categoría" : item.Category.Trim(),
+                StringComparer.OrdinalIgnoreCase)
+            .Select(group =>
+            {
+                var purchaseCost = group.Sum(item => item.PurchasePrice * item.TotalStock);
+                var saleValue = group.Sum(item => item.SalePrice * item.TotalStock);
+                return new CategoryValuationDto(
+                    group.Key,
+                    group.Count(),
+                    group.Sum(item => item.TotalStock),
+                    purchaseCost,
+                    saleValue,
+                    saleValue - purchaseCost);
+            })
+            .OrderByDescending(row => row.TotalSaleValue)
+            .ThenBy(row => row.Category, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Finds products that have had no inventory movements within the trailing <paramref name="days"/> window.
+    /// </summary>
+    public IEnumerable<LowRotationProductDto> GetLowRotationProducts(int days = 30, DateTime? referenceDate = null)
+    {
+        if (days <= 0)
+            throw new ArgumentOutOfRangeException(nameof(days), "El periodo de días debe ser mayor a cero.");
+
+        var now = referenceDate ?? DateTime.Now;
+        var cutoff = now.AddDays(-days);
+
+        var lastMovementByProduct = _movementRepository.GetAll()
+            .Where(m => m.MovementType is MovementType.Entry or MovementType.Exit)
+            .GroupBy(m => m.ProductId)
+            .ToDictionary(g => g.Key, g => g.Max(m => m.Date));
+
+        return GetProductStockSummary()
+            .Select(item =>
+            {
+                var hasMovement = lastMovementByProduct.TryGetValue(item.ProductId, out var lastDate);
+                DateTime? lastMovementDate = hasMovement ? lastDate : null;
+                return (Summary: item, LastMovementDate: lastMovementDate);
+            })
+            .Where(entry => !entry.LastMovementDate.HasValue || entry.LastMovementDate.Value < cutoff)
+            .Select(entry =>
+            {
+                int? daysWithoutMovement = entry.LastMovementDate.HasValue
+                    ? Math.Max(0, (int)Math.Floor((now - entry.LastMovementDate.Value).TotalDays))
+                    : null;
+
+                return new LowRotationProductDto(
+                    entry.Summary.ProductId,
+                    entry.Summary.ProductSku,
+                    entry.Summary.ProductName,
+                    entry.Summary.Category,
+                    entry.Summary.TotalStock,
+                    entry.LastMovementDate,
+                    daysWithoutMovement);
+            })
+            .OrderBy(row => row.LastMovementDate.HasValue)
+            .ThenBy(row => row.LastMovementDate)
+            .ThenBy(row => row.ProductName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     /// <summary>

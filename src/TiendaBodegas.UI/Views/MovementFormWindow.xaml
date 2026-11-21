@@ -3,101 +3,118 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding Title}"
         Icon="pack://application:,,,/TiendaBodegas.UI;component/Assets/Inventory.ico"
-        Width="460"
+        Width="500"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="{StaticResource Pearl50Brush}">
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
-
-        <Style x:Key="FormErrorBannerStyle" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource DangerBgBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource DangerBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="Padding" Value="10,8" />
-            <Setter Property="Margin" Value="0,12,0,0" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding FormError}" Value="">
-                    <Setter Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
     </Window.Resources>
 
-    <StackPanel Margin="24">
-        <TextBlock Text="{Binding Title}"
-                   FontSize="18"
-                   FontWeight="Bold"
-                   Foreground="{StaticResource TextPrimaryBrush}"
-                   Margin="0,0,0,16" />
+    <Grid Margin="16">
+        <Border Style="{StaticResource ModalSurfaceBorderStyle}"
+                Effect="{StaticResource ModalShadowEffect}">
+            <StackPanel>
+                <Border Style="{StaticResource ModalHeaderBorderStyle}">
+                    <Grid>
+                        <TextBlock Text="{Binding Title}"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" />
 
-        <TextBlock Text="TIPO DE MOVIMIENTO *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,4" />
-        <ComboBox ItemsSource="{Binding MovementTypes}"
-                  SelectedValue="{Binding SelectedMovementType, Mode=TwoWay}"
-                  SelectedValuePath="Type"
-                  DisplayMemberPath="Label"
-                  Style="{StaticResource ModernComboBoxStyle}" />
+                        <Button Command="{Binding CancelCommand}"
+                                IsCancel="True"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource ModalCloseButtonStyle}"
+                                ToolTip="Cerrar">
+                            <Path Data="M 1,1 L 11,11 M 11,1 L 1,11"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.8"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Width="12"
+                                  Height="12"
+                                  Stretch="Uniform" />
+                        </Button>
+                    </Grid>
+                </Border>
 
-        <TextBlock Text="PRODUCTO *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
-        <ComboBox ItemsSource="{Binding Products}"
-                  SelectedItem="{Binding SelectedProduct, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}"
-                  Style="{StaticResource ModernComboBoxStyle}">
-            <ComboBox.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock>
-                        <Run Text="{Binding SKU, Mode=OneWay}" FontWeight="SemiBold" />
-                        <Run Text=" — " />
-                        <Run Text="{Binding Name, Mode=OneWay}" />
-                    </TextBlock>
-                </DataTemplate>
-            </ComboBox.ItemTemplate>
-        </ComboBox>
-        <TextBlock Text="{Binding ProductError}" Style="{StaticResource FieldErrorTextStyle}" />
+                <StackPanel Margin="24,20,24,24">
+                    <TextBlock Text="TIPO DE MOVIMIENTO" Style="{StaticResource FieldLabelTextStyle}" Margin="0,0,0,5" />
+                    <ComboBox ItemsSource="{Binding MovementTypes}"
+                              SelectedValue="{Binding SelectedMovementType, Mode=TwoWay}"
+                              SelectedValuePath="Type"
+                              DisplayMemberPath="Label"
+                              Style="{StaticResource ModernComboBoxStyle}" />
 
-        <Border Background="{StaticResource Cool50Brush}"
-                BorderBrush="{StaticResource Cool200Brush}"
-                BorderThickness="1"
-                CornerRadius="8"
-                Padding="10,6"
-                Margin="0,8,0,0"
-                Visibility="{Binding ShowAvailableStock, Converter={StaticResource BoolToVisibility}}">
-            <TextBlock FontSize="12" Foreground="{StaticResource Cool700Brush}">
-                <Run Text="Stock disponible actual: " />
-                <Run Text="{Binding AvailableStock, Mode=OneWay}" FontWeight="Bold" />
-            </TextBlock>
+                    <TextBlock Text="PRODUCTO" Style="{StaticResource FieldLabelTextStyle}" Margin="0,14,0,5" />
+                    <ComboBox ItemsSource="{Binding Products}"
+                              SelectedItem="{Binding SelectedProduct, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}"
+                              Style="{StaticResource ModernComboBoxStyle}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock>
+                                    <Run Text="{Binding SKU, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text=" — " />
+                                    <Run Text="{Binding Name, Mode=OneWay}" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{Binding ProductError}" Style="{StaticResource FieldErrorTextStyle}" />
+
+                    <Border Background="{StaticResource Cool50Brush}"
+                            BorderBrush="{StaticResource Cool200Brush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10,6"
+                            Margin="0,8,0,0"
+                            Visibility="{Binding ShowAvailableStock, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock FontSize="12" Foreground="{StaticResource Cool700Brush}">
+                            <Run Text="Stock disponible actual: " />
+                            <Run Text="{Binding AvailableStock, Mode=OneWay}" FontWeight="Bold" />
+                        </TextBlock>
+                    </Border>
+
+                    <TextBlock Text="CANTIDAD" Style="{StaticResource FieldLabelTextStyle}" Margin="0,14,0,5" />
+                    <TextBox Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                             Tag="Ej. 10"
+                             Style="{StaticResource ModernTextBoxStyle}" />
+                    <TextBlock Text="{Binding QuantityError}" Style="{StaticResource FieldErrorTextStyle}" />
+
+                    <TextBlock Text="OBSERVACIONES" Style="{StaticResource FieldLabelTextStyle}" Margin="0,14,0,5" />
+                    <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                             Tag="Ej. Orden de reposición o nota de venta"
+                             Style="{StaticResource ModernTextBoxStyle}" />
+
+                    <Border Style="{StaticResource FormErrorBannerStyle}">
+                        <TextBlock Text="{Binding FormError}"
+                                   Foreground="{StaticResource DangerTextBrush}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap" />
+                    </Border>
+
+                    <Border Height="1"
+                            Background="{StaticResource Pearl200Brush}"
+                            Margin="0,18,0,16" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancelar"
+                                Command="{Binding CancelCommand}"
+                                Style="{StaticResource NeutralButtonStyle}"
+                                Margin="0,0,10,0" />
+                        <Button Content="Registrar"
+                                Command="{Binding SaveCommand}"
+                                IsDefault="True"
+                                Style="{StaticResource PrimaryButtonStyle}" />
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
         </Border>
-
-        <TextBlock Text="CANTIDAD *" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
-        <TextBox Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                 Tag="Ej. 10"
-                 Style="{StaticResource ModernTextBoxStyle}" />
-        <TextBlock Text="{Binding QuantityError}" Style="{StaticResource FieldErrorTextStyle}" />
-
-        <TextBlock Text="OBSERVACIONES" Style="{StaticResource FieldLabelTextStyle}" Margin="0,12,0,4" />
-        <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
-                 Tag="Ej. Orden de reposición o nota de venta"
-                 Style="{StaticResource ModernTextBoxStyle}" />
-
-        <Border Style="{StaticResource FormErrorBannerStyle}">
-            <TextBlock Text="{Binding FormError}"
-                       Foreground="{StaticResource DangerTextBrush}"
-                       FontSize="12"
-                       TextWrapping="Wrap" />
-        </Border>
-
-        <StackPanel Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Margin="0,20,0,0">
-            <Button Content="Cancelar"
-                    Command="{Binding CancelCommand}"
-                    Style="{StaticResource NeutralButtonStyle}"
-                    Margin="0,0,10,0" />
-            <Button Content="Registrar"
-                    Command="{Binding SaveCommand}"
-                    IsDefault="True"
-                    Style="{StaticResource PrimaryButtonStyle}" />
-        </StackPanel>
-    </StackPanel>
+    </Grid>
 </Window>

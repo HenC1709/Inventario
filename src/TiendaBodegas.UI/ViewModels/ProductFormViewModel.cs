@@ -86,7 +86,8 @@ public partial class ProductFormViewModel : ValidatableViewModel
     public ProductFormViewModel(
         ICatalogService catalogService,
         IInventoryService? inventoryService = null,
-        Product? productToEdit = null)
+        Product? productToEdit = null,
+        int defaultMinStock = 10)
     {
         _catalogService = catalogService;
         _inventoryService = inventoryService;
@@ -116,6 +117,7 @@ public partial class ProductFormViewModel : ValidatableViewModel
         {
             Title = "Agregar Nuevo Producto";
             _selectedSupplier = Suppliers.FirstOrDefault();
+            _minStockText = Math.Max(0, defaultMinStock).ToString(CultureInfo.InvariantCulture);
         }
     }
 

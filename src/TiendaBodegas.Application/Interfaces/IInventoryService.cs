@@ -4,7 +4,7 @@ using TiendaBodegas.Domain.Entities;
 namespace TiendaBodegas.Application.Interfaces;
 
 /// <summary>
-/// Application service contract for recording single-warehouse inventory movements and querying stock levels.
+/// Application service contract for recording single-warehouse inventory movements, stock queries, and audit reports.
 /// </summary>
 public interface IInventoryService
 {
@@ -42,4 +42,14 @@ public interface IInventoryService
     /// Builds a global stock summary per product including supplier info, pricing, and stock status labels.
     /// </summary>
     IEnumerable<ProductStockSummaryDto> GetProductStockSummary();
+
+    /// <summary>
+    /// Builds an inventory valuation summary grouped by category (purchase cost vs. sale value).
+    /// </summary>
+    IEnumerable<CategoryValuationDto> GetCategoryValuationReport();
+
+    /// <summary>
+    /// Finds products that have had no inventory movements within the specified trailing <paramref name="days"/> window.
+    /// </summary>
+    IEnumerable<LowRotationProductDto> GetLowRotationProducts(int days = 30, DateTime? referenceDate = null);
 }
