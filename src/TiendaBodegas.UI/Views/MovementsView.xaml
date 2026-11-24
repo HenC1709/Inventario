@@ -118,6 +118,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
@@ -155,6 +156,16 @@
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>
+                                        <Button Grid.Column="2"
+                                                Content="Imprimir"
+                                                ToolTip="Imprimir ticket térmico 80 mm"
+                                                Command="{Binding DataContext.PrintMovementTicketCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource SecondaryCoolButtonStyle}"
+                                                Padding="10,5"
+                                                FontSize="12"
+                                                VerticalAlignment="Center"
+                                                Margin="14,0,0,0" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>

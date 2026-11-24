@@ -17,7 +17,10 @@ namespace TiendaBodegas.UI.ViewModels;
 /// </summary>
 public partial class InventoryViewModel : ObservableObject
 {
-    public const int PageSize = 6;
+    public const int DefaultPageSize = 6;
+    public const double TableHeaderHeightDips = 42.0;
+    public const double TableRowHeightDips = 48.0;
+
     public const string StatusInStock = "En Stock";
     public const string StatusLowStock = "Bajo Stock";
     public const string StatusOutOfStock = "Sin Stock";
@@ -57,6 +60,9 @@ public partial class InventoryViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _sortAscending = true;
+
+    [ObservableProperty]
+    private int _pageSize = DefaultPageSize;
 
     [ObservableProperty]
     private int _currentPage = 1;
@@ -396,6 +402,42 @@ public partial class InventoryViewModel : ObservableObject
             return;
 
         CurrentPage = page;
+        UpdateCurrentPageSlice();
+    }
+
+    /// <summary>
+    /// Dynamically recalculates <see cref="PageSize"/> from the rendered table height in DIPs
+    /// so visible product rows fill the screen without leaving unused empty space.
+    /// </summary>
+    /// <param name="availableTableHeightDips">Actual height in DIPs of the DataGrid viewport (header + rows).</param>
+    public void UpdatePageSizeForViewportHeight(double availableTableHeightDips)
+    {
+        if (double.IsNaN(availableTableHeightDips) || double.IsInfinity(availableTableHeightDips) || availableTableHeightDips <= 0)
+            return;
+
+        var usableRowsHeight = Math.Max(0.0, availableTableHeightDips - TableHeaderHeightDips - 2.0);
+        var fittingRows = Math.Max(DefaultPageSize, (int)Math.Floor(usableRowsHeight / TableRowHeightDips));
+
+        if (fittingRows != PageSize)
+        {
+            PageSize = fittingRows;
+        }
+    }
+
+    partial void OnPageSizeChanged(int value)
+    {
+        if (value < DefaultPageSize)
+        {
+            PageSize = DefaultPageSize;
+            return;
+        }
+
+        TotalPages = Math.Max(1, (int)Math.Ceiling(FilteredItemsCount / (double)PageSize));
+        if (CurrentPage > TotalPages)
+            CurrentPage = TotalPages;
+        else if (CurrentPage < 1)
+            CurrentPage = 1;
+
         UpdateCurrentPageSlice();
     }
 

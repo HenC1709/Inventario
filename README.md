@@ -19,7 +19,7 @@ El código usa identificadores y comentarios XML en inglés; la interfaz y la do
 - **Sistema visual y shell WPF:** tema perlado/terracota/azul frío centralizado en `Themes/Colors.xaml` y `Themes/Controls.xaml`, con barra lateral de 6 secciones (`DASHBOARD`, `INVENTARIO` con contador dinámico, `PROVEEDORES`, `VENTAS`, `REPORTES`, `AJUSTES`) e icono `assets/Inventory.ico`.
 - **Vistas operativas (`R3`–`R9`):**
   - `DASHBOARD`: distribución de stock por categoría en barras horizontales y panel `Alertas de Reposición` enlazado al inventario filtrado.
-  - `INVENTARIO`: 4 tarjetas KPI clicables, buscador en tiempo real, filtros (`Categoría`, `Estado`, `Proveedor`), ordenamiento multi-página, paginación de 6 filas, exportación CSV (RFC-4180), modal `ProductFormWindow` y confirmación `ConfirmDialogWindow`.
+  - `INVENTARIO`: 4 tarjetas KPI clicables, buscador en tiempo real, filtros (`Categoría`, `Estado`, `Proveedor`), ordenamiento multi-página, paginación dinámica adaptada al alto de pantalla (mínimo 6 filas), exportación CSV (RFC-4180), modal `ProductFormWindow` y confirmación `ConfirmDialogWindow`.
   - `PROVEEDORES`: directorio `PRV-XX` (`Activo` / `En revisión`), modal `SupplierFormWindow` con `INotifyDataErrorInfo` y bloqueo de eliminación si existen productos vinculados.
   - `VENTAS`: historial en tarjetas limpias con fechas relativas (`Hoy` / `Ayer`), filtros por rango de fechas y tipo (`Entrada` / `Salida`), y modal `MovementFormWindow`.
   - `REPORTES`: descarga CSV de valoración por categoría (costo de compra, valor de venta y margen) y auditoría de rotación baja (30 días sin movimientos) con vista previa y exportación CSV.
@@ -46,8 +46,8 @@ dotnet test TiendaBodegas.slnx
 ## Tareas pendientes
 
 ### Próximas etapas — NECESARIO (`N1`–`N7`)
-- [ ] **N1. Tickets imprimibles (80 mm):** `IPrinterService` + generación e impresión con `FlowDocument` y `PrintDialog`.
-- [ ] **N2. Exportación PDF:** reportes e historial en PDF con QuestPDF (validando licencia Community).
+- [x] **N1. Tickets imprimibles (80 mm):** `IPrinterService` + `WpfPrinterService` con armado de `FlowDocument` (~278 DIPs) desacoplado de `PrintDialog`.
+- [x] **N2. Exportación PDF:** `IPdfExportService` + `QuestPdfExportService` con QuestPDF (`LicenseType.Community`), reutilizando DTOs y formato de moneda activo.
 - [ ] **N3. Reportes Excel:** exportación `.xlsx` con ClosedXML.
 - [ ] **N4. Migración a SQLite (MVP 5):** esquema relacional (`Suppliers`, `Products`, `StockMovements`, `Settings`), repositorios SQL, migraciones versionadas y migrador transaccional desde JSON (ver `docs/camino-a-sql.md`).
 - [ ] **N5. Almacenamiento en usuario, backup y observabilidad (MVP 5):** evaluar traslado de `data/` a `%LOCALAPPDATA%\TiendaBodegas`, copia de seguridad/restauración, logging con Serilog y manejo global de excepciones.

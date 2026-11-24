@@ -19,6 +19,9 @@ public partial class ReportsViewModel : ObservableObject
     private readonly IInventoryService _inventoryService;
     private readonly IInventoryExportService _exportService;
     private readonly IDialogService _dialogService;
+    private readonly IPdfExportService? _pdfExportService;
+    private readonly IPrinterService? _printerService;
+    private readonly ISettingsService? _settingsService;
 
     [ObservableProperty]
     private bool _hasGeneratedAudit;
@@ -58,11 +61,17 @@ public partial class ReportsViewModel : ObservableObject
     public ReportsViewModel(
         IInventoryService inventoryService,
         IInventoryExportService exportService,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        IPdfExportService? pdfExportService = null,
+        IPrinterService? printerService = null,
+        ISettingsService? settingsService = null)
     {
         _inventoryService = inventoryService;
         _exportService = exportService;
         _dialogService = dialogService;
+        _pdfExportService = pdfExportService;
+        _printerService = printerService;
+        _settingsService = settingsService;
     }
 
     /// <summary>
@@ -146,6 +155,149 @@ public partial class ReportsViewModel : ObservableObject
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             SetErrorStatus($"No se pudo exportar la auditoría: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Generates a category valuation report in PDF format using the active currency and saves it to a user-selected file.
+    /// </summary>
+    [RelayCommand]
+    public void ExportValuationPdf()
+    {
+        ClearStatus();
+        if (_pdfExportService == null)
+        {
+            SetErrorStatus("El servicio de exportación PDF no está disponible.");
+            return;
+        }
+
+        var report = _inventoryService.GetCategoryValuationReport().ToList();
+        if (report.Count == 0)
+        {
+            SetErrorStatus("No hay productos registrados para generar la valoración.");
+            return;
+        }
+
+        var path = _dialogService.ShowSaveFileDialog(
+            "valoracion_inventario.pdf",
+            "Documento PDF (*.pdf)|*.pdf");
+
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        try
+        {
+            var settings = _settingsService?.GetSettings();
+            var pdfBytes = _pdfExportService.GenerateValuationPdf(report, settings?.BusinessName, settings?.CurrencyCode);
+            File.WriteAllBytes(path, pdfBytes);
+            SetSuccessStatus("Reporte de valoración PDF exportado correctamente.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            SetErrorStatus($"No se pudo exportar el PDF de valoración: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Exports the 30-day low-rotation product audit to a formatted PDF document.
+    /// </summary>
+    [RelayCommand]
+    public void ExportLowRotationPdf()
+    {
+        ClearStatus();
+        if (_pdfExportService == null)
+        {
+            SetErrorStatus("El servicio de exportación PDF no está disponible.");
+            return;
+        }
+
+        if (!HasGeneratedAudit)
+            PopulateLowRotationAudit();
+
+        var path = _dialogService.ShowSaveFileDialog(
+            "productos_rotacion_baja.pdf",
+            "Documento PDF (*.pdf)|*.pdf");
+
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        try
+        {
+            var settings = _settingsService?.GetSettings();
+            var pdfBytes = _pdfExportService.GenerateLowRotationPdf(LowRotationItems, settings?.BusinessName, DefaultAuditDays);
+            File.WriteAllBytes(path, pdfBytes);
+            SetSuccessStatus("Auditoría de rotación baja exportada a PDF correctamente.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            SetErrorStatus($"No se pudo exportar el PDF de auditoría: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Exports the full product inventory summary to a formatted PDF document.
+    /// </summary>
+    [RelayCommand]
+    public void ExportInventoryPdf()
+    {
+        ClearStatus();
+        if (_pdfExportService == null)
+        {
+            SetErrorStatus("El servicio de exportación PDF no está disponible.");
+            return;
+        }
+
+        var items = _inventoryService.GetProductStockSummary().ToList();
+        if (items.Count == 0)
+        {
+            SetErrorStatus("No hay productos registrados para exportar.");
+            return;
+        }
+
+        var path = _dialogService.ShowSaveFileDialog(
+            "inventario_productos.pdf",
+            "Documento PDF (*.pdf)|*.pdf");
+
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        try
+        {
+            var settings = _settingsService?.GetSettings();
+            var pdfBytes = _pdfExportService.GenerateInventoryPdf(items, settings?.BusinessName, settings?.CurrencyCode);
+            File.WriteAllBytes(path, pdfBytes);
+            SetSuccessStatus("Reporte de inventario PDF exportado correctamente.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            SetErrorStatus($"No se pudo exportar el PDF de inventario: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Prints an 80 mm thermal receipt for the most recent inventory movement.
+    /// </summary>
+    [RelayCommand]
+    public void PrintLatestMovementTicket()
+    {
+        ClearStatus();
+        if (_printerService == null)
+        {
+            SetErrorStatus("El servicio de impresión no está disponible.");
+            return;
+        }
+
+        var latestMovement = _inventoryService.GetMovementDetails().FirstOrDefault();
+        if (latestMovement == null)
+        {
+            SetErrorStatus("No hay movimientos registrados para imprimir.");
+            return;
+        }
+
+        var settings = _settingsService?.GetSettings();
+        if (_printerService.PrintMovementTicket(latestMovement, settings?.BusinessName, settings?.CurrencyCode))
+        {
+            SetSuccessStatus("Ticket 80 mm enviado a impresión correctamente.");
         }
     }
 

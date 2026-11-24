@@ -148,6 +148,39 @@ public class InventoryViewModelTests : IDisposable
     }
 
     /// <summary>
+    /// Verifies that <see cref="InventoryViewModel.UpdatePageSizeForViewportHeight"/> expands visible rows
+    /// to fill the available screen height and recalculates pagination bounds cleanly.
+    /// </summary>
+    [Fact]
+    public void UpdatePageSizeForViewportHeight_ExpandsRowsToFillScreenAndAdjustsPagination()
+    {
+        using var provider = BuildSeededProvider();
+        var vm = provider.GetRequiredService<InventoryViewModel>();
+
+        Assert.Equal(InventoryViewModel.DefaultPageSize, vm.PageSize);
+        Assert.Equal(6, vm.PagedItems.Count);
+        Assert.Equal(2, vm.TotalPages);
+
+        // Simulate 1080p maximized DataGrid height (~720 DIPs -> (720 - 44) / 48 = 14 rows)
+        vm.NextPageCommand.Execute(null);
+        Assert.Equal(2, vm.CurrentPage);
+
+        vm.UpdatePageSizeForViewportHeight(720.0);
+
+        Assert.Equal(14, vm.PageSize);
+        Assert.Equal(1, vm.CurrentPage);
+        Assert.Equal(1, vm.TotalPages);
+        Assert.Equal(12, vm.PagedItems.Count);
+        Assert.Equal("Mostrando 1-12 de 12 productos", vm.PaginationInfoText);
+
+        // Small heights never drop below DefaultPageSize (6)
+        vm.UpdatePageSizeForViewportHeight(180.0);
+        Assert.Equal(InventoryViewModel.DefaultPageSize, vm.PageSize);
+        Assert.Equal(2, vm.TotalPages);
+        Assert.Equal(6, vm.PagedItems.Count);
+    }
+
+    /// <summary>
     /// Verifies row deletion error handling on products with movements and successful deletion on unused products.
     /// </summary>
     [Fact]
