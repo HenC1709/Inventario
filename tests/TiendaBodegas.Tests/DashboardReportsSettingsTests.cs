@@ -2,12 +2,14 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using TiendaBodegas.Application.DTOs;
 using TiendaBodegas.Application.Interfaces;
 using TiendaBodegas.Application.Services;
 using TiendaBodegas.Domain.Entities;
+using TiendaBodegas.Domain.Enums;
 using TiendaBodegas.Infrastructure.Persistence.Json;
 using TiendaBodegas.Infrastructure.Persistence.Repositories;
 using TiendaBodegas.Infrastructure.Services;
@@ -400,6 +402,106 @@ public class DashboardReportsSettingsTests : IDisposable
         Assert.Equal("€2,605.10", converter.Convert(new object[] { 2605.10m, "EUR" }, typeof(string), null, CultureInfo.InvariantCulture));
         Assert.Equal("COP $49,803", converter.Convert(new object[] { 49803m, "COP" }, typeof(string), null, CultureInfo.InvariantCulture));
         Assert.Equal("$12.00", converter.Convert(new object[] { 12.00m, "USD" }, typeof(string), null, CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>
+    /// End-to-end R10 acceptance test covering suppliers, products, entries/exits, stock-shortage guards,
+    /// protected deletions, low-stock alerts, daily currency conversion to COP, and category valuation CSV output.
+    /// </summary>
+    [Fact]
+    public async Task FullInventoryLifecycle_UpdatesStockAlertsCurrencyAndValuationReport()
+    {
+        var stubRates = new StubExchangeRateService(new Dictionary<(string From, string To), decimal>
+        {
+            [("USD", "COP")] = 4000m
+        });
+
+        using var provider = BuildServiceProviderOnly(stubRates);
+        provider.GetRequiredService<JsonDataContext>().LoadJson();
+
+        var catalog = provider.GetRequiredService<ICatalogService>();
+        var inventory = provider.GetRequiredService<IInventoryService>();
+        var exportService = provider.GetRequiredService<IInventoryExportService>();
+        var dashboardVm = provider.GetRequiredService<DashboardViewModel>();
+        var inventoryVm = provider.GetRequiredService<InventoryViewModel>();
+        var settingsVm = provider.GetRequiredService<SettingsViewModel>();
+
+        var supplier = catalog.CreateSupplier("Café de Origen S.A.S.", "ventas@cafeorigen.co", "Bebidas", SupplierStatus.Active);
+        Assert.Equal("PRV-01", supplier.Code);
+
+        var product = catalog.CreateProduct("Café Excelso 500g", "CAF-500", "Bebidas", supplier.Id, 6.00m, 10.00m, minStock: 45);
+
+        inventory.RegisterEntry(product.Id, 50, "Compra lote #1");
+        inventory.RegisterExit(product.Id, 10, "Venta mostrador");
+        Assert.Equal(40, inventory.GetTotalStockByProduct(product.Id));
+
+        var shortageEx = Assert.Throws<InvalidOperationException>(() =>
+            inventory.RegisterExit(product.Id, 41, "Exceso"));
+        Assert.Contains("Stock insuficiente", shortageEx.Message);
+
+        Assert.Throws<InvalidOperationException>(() => catalog.DeleteSupplier(supplier.Id));
+        Assert.Throws<InvalidOperationException>(() => catalog.DeleteProduct(product.Id));
+
+        dashboardVm.LoadData();
+        inventoryVm.LoadData();
+
+        Assert.Equal(1, dashboardVm.TotalAlertsCount);
+        Assert.Equal(1, inventoryVm.LowAndOutOfStockCount);
+        Assert.Equal(400.00m, inventoryVm.EstimatedTotalValue);
+
+        settingsVm.BusinessName = "Almacén Andino";
+        settingsVm.SelectedCurrencyCode = "COP";
+        settingsVm.LowStockThresholdText = "12";
+        await settingsVm.SaveSettingsCommand.ExecuteAsync(null);
+
+        var updatedProduct = catalog.GetAllProducts().Single(p => p.Id == product.Id);
+        Assert.Equal(24000m, updatedProduct.PurchasePrice);
+        Assert.Equal(40000m, updatedProduct.SalePrice);
+        Assert.Equal("COP", inventoryVm.CurrencyCode);
+        Assert.Equal("$1,600,000", inventoryVm.FormattedEstimatedValue);
+
+        var valuationCsv = exportService.GenerateValuationCsv(inventory.GetCategoryValuationReport());
+        Assert.Contains("Bebidas,1,40,960000.00,1600000.00,640000.00", valuationCsv);
+    }
+
+    /// <summary>
+    /// Verifies Clean Architecture boundaries: UI ViewModels depend only on Application/Domain contracts and dialogs,
+    /// never on Infrastructure persistence or repository interfaces.
+    /// </summary>
+    [Fact]
+    public void AllViewModelsAndViews_RespectCleanArchitectureBoundaries()
+    {
+        var viewModelTypes = typeof(MainViewModel).Assembly
+            .GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false }
+                        && string.Equals(t.Namespace, "TiendaBodegas.UI.ViewModels", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.NotEmpty(viewModelTypes);
+
+        foreach (var vmType in viewModelTypes)
+        {
+            foreach (var ctor in vmType.GetConstructors())
+            {
+                foreach (var param in ctor.GetParameters())
+                {
+                    var ns = param.ParameterType.Namespace ?? string.Empty;
+                    Assert.False(
+                        ns.StartsWith("TiendaBodegas.Domain.Interfaces", StringComparison.Ordinal)
+                        || ns.StartsWith("TiendaBodegas.Infrastructure", StringComparison.Ordinal),
+                        $"{vmType.Name} constructor depends on forbidden type {param.ParameterType.FullName}.");
+                }
+            }
+
+            foreach (var field in vmType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly))
+            {
+                var ns = field.FieldType.Namespace ?? string.Empty;
+                Assert.False(
+                    ns.StartsWith("TiendaBodegas.Domain.Interfaces", StringComparison.Ordinal)
+                    || ns.StartsWith("TiendaBodegas.Infrastructure", StringComparison.Ordinal),
+                    $"{vmType.Name} field {field.Name} references forbidden type {field.FieldType.FullName}.");
+            }
+        }
     }
 
     private ServiceProvider BuildSeededProvider(IExchangeRateService? exchangeRateService = null)
