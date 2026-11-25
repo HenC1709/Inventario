@@ -22,7 +22,7 @@ public class JsonDataContext
     /// </summary>
     public JsonDataContext(string? dataDirectory = null)
     {
-        _dataDirectory = dataDirectory ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
+        _dataDirectory = AppDataPaths.ResolveDataDirectory(dataDirectory);
     }
 
     /// <summary>

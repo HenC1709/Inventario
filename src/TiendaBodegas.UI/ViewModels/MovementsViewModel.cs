@@ -92,6 +92,13 @@ public partial class MovementsViewModel : ObservableObject
     /// </summary>
     public void LoadData()
     {
+        if (_settingsService != null)
+        {
+            var settings = _settingsService.GetSettings();
+            CurrencyCode = settings.CurrencyCode;
+            CurrencySymbol = settings.CurrencySymbol;
+        }
+
         ApplyFilters();
     }
 

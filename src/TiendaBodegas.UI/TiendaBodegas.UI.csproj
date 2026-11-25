@@ -16,6 +16,10 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>StockFlow</AssemblyName>
+    <Version>1.0.0</Version>
+    <Company>StockFlow</Company>
+    <Copyright>Copyright © 2026 StockFlow</Copyright>
     <Product>StockFlow</Product>
     <AssemblyTitle>StockFlow</AssemblyTitle>
     <Description>Sistema de gestión de inventario, proveedores, ventas y reportes.</Description>

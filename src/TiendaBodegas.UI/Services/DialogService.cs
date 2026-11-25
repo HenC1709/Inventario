@@ -77,4 +77,21 @@ public class DialogService : IDialogService
             ? dialog.FileName
             : null;
     }
+
+    /// <summary>
+    /// Displays an <see cref="OpenFileDialog"/> and returns the chosen existing file path, or null when cancelled.
+    /// </summary>
+    public string? ShowOpenFileDialog(string filter)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = filter,
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        return dialog.ShowDialog(System.Windows.Application.Current?.MainWindow) == true
+            ? dialog.FileName
+            : null;
+    }
 }

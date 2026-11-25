@@ -13,7 +13,7 @@
 3. **Separación de persistencia.** `SqliteSupplierRepository`, `SqliteProductRepository` (incluyendo `UpdateRange` transaccional), `SqliteStockMovementRepository` y `SqliteSettingsRepository` implementan las interfaces existentes de `TiendaBodegas.Domain.Interfaces` sin modificar la capa `Application` ni los `ViewModels`.
 4. **Migración automática desde JSON.** En `DependencyInjection.InitializeDatabase`, cuando SQLite está vacío y existen archivos JSON previos (`proveedores.json`, `productos.json`, `tickets.json`, `settings.json`), `JsonToSqliteMigrator.MigrateIfNeeded` valida IDs y referencias, inserta todo en una única transacción, concilia conteos y saldos netos por producto (reviertiendo con `Rollback` ante cualquier inconsistencia) y conserva los archivos `.json` intactos como respaldo.
 
-## Pendiente en etapas posteriores (N5–N6)
+## Implementado en etapas posteriores (N5–N6)
 
-- Trasladar la ruta de `data/` junto al ejecutable a `%LOCALAPPDATA%\TiendaBodegas` con copia de seguridad y restauración desde UI (**N5**).
-- Empaquetado e instalador Windows (**N6**).
+- **N5:** Almacenamiento per-user en `%LOCALAPPDATA%\StockFlow` (`AppDataPaths` con promoción automática desde datos previos), copias de seguridad y restauración SQLite verificadas desde **Ajustes** (`SqliteBackupService` + copia preventiva en `backups/pre-restore-*.db`) y logs diarios en `logs/stockflow-*.log` (`SerilogAppLogger`).
+- **N6:** Empaquetado `StockFlow.exe`, script `scripts/publish-release.ps1` e instalador Inno Setup `installer/StockFlow.iss`.

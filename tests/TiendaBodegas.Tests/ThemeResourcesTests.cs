@@ -33,12 +33,12 @@ public class ThemeResourcesTests
 
                 var colors = new ResourceDictionary
                 {
-                    Source = new Uri("pack://application:,,,/TiendaBodegas.UI;component/Themes/Colors.xaml", UriKind.Absolute)
+                    Source = new Uri("pack://application:,,,/StockFlow;component/Themes/Colors.xaml", UriKind.Absolute)
                 };
 
                 var controls = new ResourceDictionary
                 {
-                    Source = new Uri("pack://application:,,,/TiendaBodegas.UI;component/Themes/Controls.xaml", UriKind.Absolute)
+                    Source = new Uri("pack://application:,,,/StockFlow;component/Themes/Controls.xaml", UriKind.Absolute)
                 };
 
                 var pearlBrush = Assert.IsType<SolidColorBrush>(colors["Pearl100Brush"]);
@@ -100,7 +100,7 @@ public class ThemeResourcesTests
 
                 var controls = new ResourceDictionary
                 {
-                    Source = new Uri("pack://application:,,,/TiendaBodegas.UI;component/Themes/Controls.xaml", UriKind.Absolute)
+                    Source = new Uri("pack://application:,,,/StockFlow;component/Themes/Controls.xaml", UriKind.Absolute)
                 };
 
                 var comboBox = new ComboBox
@@ -147,7 +147,7 @@ public class ThemeResourcesTests
 
                 System.Windows.Application.ResourceAssembly ??= typeof(App).Assembly;
 
-                var iconUri = new Uri("pack://application:,,,/TiendaBodegas.UI;component/Assets/Inventory.ico", UriKind.Absolute);
+                var iconUri = new Uri("pack://application:,,,/StockFlow;component/Assets/Inventory.ico", UriKind.Absolute);
                 var frame = BitmapFrame.Create(iconUri);
 
                 Assert.True(frame.PixelWidth > 0);

@@ -1,8 +1,11 @@
 bin/
 obj/
+.vs/
 vs/
-docs
 .vscode/
+artifacts/
+publish/
+installer/output/
+*.log
 *.docx
 ~$*.docx
-referencia/

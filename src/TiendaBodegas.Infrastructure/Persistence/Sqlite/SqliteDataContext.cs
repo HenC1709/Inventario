@@ -32,8 +32,7 @@ public class SqliteDataContext : IDisposable
     /// </summary>
     public SqliteDataContext(string? dataDirectory = null)
     {
-        DataDirectory = dataDirectory ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
-        Directory.CreateDirectory(DataDirectory);
+        DataDirectory = AppDataPaths.ResolveDataDirectory(dataDirectory);
 
         DatabasePath = Path.Combine(DataDirectory, "tiendabodegas.db");
         ConnectionString = new SqliteConnectionStringBuilder
