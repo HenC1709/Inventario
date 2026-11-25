@@ -38,6 +38,7 @@ public partial class InventoryViewModel : ObservableObject
     private readonly IInventoryExportService _exportService;
     private readonly IDialogService _dialogService;
     private readonly ISettingsService? _settingsService;
+    private readonly IExcelExportService? _excelExportService;
 
     private List<ProductStockSummaryDto> _allItems = new();
     private List<ProductStockSummaryDto> _filteredItems = new();
@@ -218,13 +219,15 @@ public partial class InventoryViewModel : ObservableObject
         IInventoryService inventoryService,
         IInventoryExportService exportService,
         IDialogService dialogService,
-        ISettingsService? settingsService = null)
+        ISettingsService? settingsService = null,
+        IExcelExportService? excelExportService = null)
     {
         _catalogService = catalogService;
         _inventoryService = inventoryService;
         _exportService = exportService;
         _dialogService = dialogService;
         _settingsService = settingsService;
+        _excelExportService = excelExportService;
         _selectedStatusFilter = StatusFilters[0];
 
         if (_settingsService != null)
@@ -550,6 +553,48 @@ public partial class InventoryViewModel : ObservableObject
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             SetErrorStatus($"No se pudo guardar el archivo CSV: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Exports all currently filtered and sorted inventory items to a formatted Excel workbook.
+    /// </summary>
+    [RelayCommand]
+    public void ExportExcel()
+    {
+        ClearStatus();
+        if (_excelExportService == null)
+        {
+            SetErrorStatus("El servicio de exportación Excel no está disponible.");
+            return;
+        }
+
+        if (_filteredItems.Count == 0)
+        {
+            SetErrorStatus("No hay productos visibles para exportar.");
+            return;
+        }
+
+        var targetPath = _dialogService.ShowSaveFileDialog(
+            "inventario_productos.xlsx",
+            "Libro de Excel (*.xlsx)|*.xlsx");
+
+        if (string.IsNullOrWhiteSpace(targetPath))
+            return;
+
+        try
+        {
+            var settings = _settingsService?.GetSettings();
+            var excelBytes = _excelExportService.GenerateInventoryExcel(
+                _filteredItems,
+                settings?.BusinessName,
+                CurrencyCode);
+            File.WriteAllBytes(targetPath, excelBytes);
+            SetSuccessStatus("Archivo Excel exportado correctamente.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            SetErrorStatus($"No se pudo guardar el archivo Excel: {ex.Message}");
         }
     }
 

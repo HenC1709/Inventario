@@ -12,6 +12,7 @@ using TiendaBodegas.Domain.Entities;
 using TiendaBodegas.Domain.Enums;
 using TiendaBodegas.Infrastructure.Persistence.Json;
 using TiendaBodegas.Infrastructure.Persistence.Repositories;
+using TiendaBodegas.Infrastructure.Persistence.Sqlite;
 using TiendaBodegas.Infrastructure.Services;
 using TiendaBodegas.UI;
 using TiendaBodegas.UI.Converters;
@@ -417,7 +418,7 @@ public class DashboardReportsSettingsTests : IDisposable
         });
 
         using var provider = BuildServiceProviderOnly(stubRates);
-        provider.GetRequiredService<JsonDataContext>().LoadJson();
+        provider.GetRequiredService<SqliteDataContext>().InitializeSchema();
 
         var catalog = provider.GetRequiredService<ICatalogService>();
         var inventory = provider.GetRequiredService<IInventoryService>();

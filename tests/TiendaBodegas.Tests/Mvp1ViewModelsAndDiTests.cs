@@ -1,7 +1,7 @@
 using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using TiendaBodegas.Application.Interfaces;
-using TiendaBodegas.Infrastructure.Persistence.Json;
+using TiendaBodegas.Domain.Interfaces;
 using TiendaBodegas.UI;
 using TiendaBodegas.UI.ViewModels;
 using Xunit;
@@ -33,10 +33,11 @@ public class Mvp1ViewModelsAndDiTests : IDisposable
         {
             DependencyInjection.InitializeDatabase(firstProvider);
 
-            var firstContext = firstProvider.GetRequiredService<JsonDataContext>();
-            Assert.Equal(4, firstContext.Suppliers.Count);
-            Assert.Equal(12, firstContext.Products.Count);
-            Assert.Equal(13, firstContext.StockMovements.Count);
+            Assert.True(File.Exists(Path.Combine(_tempDirectory, "tiendabodegas.db")));
+
+            Assert.Equal(4, firstProvider.GetRequiredService<ISupplierRepository>().GetAll().Count());
+            Assert.Equal(12, firstProvider.GetRequiredService<IProductRepository>().GetAll().Count());
+            Assert.Equal(13, firstProvider.GetRequiredService<IStockMovementRepository>().GetAll().Count());
 
             var inventoryService = firstProvider.GetRequiredService<IInventoryService>();
             var summary = inventoryService.GetProductStockSummary().ToList();
@@ -44,18 +45,15 @@ public class Mvp1ViewModelsAndDiTests : IDisposable
             Assert.Equal(5, summary.Count(s => s.IsLowStock));
             Assert.Equal(4, summary.Select(s => s.Category).Distinct().Count());
             Assert.Equal(2605.10m, summary.Sum(s => s.SalePrice * s.TotalStock));
-
-            firstContext.SaveJson();
         }
 
         using (var secondProvider = BuildServiceProvider())
         {
             DependencyInjection.InitializeDatabase(secondProvider);
 
-            var secondContext = secondProvider.GetRequiredService<JsonDataContext>();
-            Assert.Equal(4, secondContext.Suppliers.Count);
-            Assert.Equal(12, secondContext.Products.Count);
-            Assert.Equal(13, secondContext.StockMovements.Count);
+            Assert.Equal(4, secondProvider.GetRequiredService<ISupplierRepository>().GetAll().Count());
+            Assert.Equal(12, secondProvider.GetRequiredService<IProductRepository>().GetAll().Count());
+            Assert.Equal(13, secondProvider.GetRequiredService<IStockMovementRepository>().GetAll().Count());
         }
     }
 

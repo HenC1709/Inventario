@@ -1,30 +1,30 @@
-# TiendaBodegas
+# StockFlow (`TiendaBodegas`)
 
-Aplicación de escritorio Windows (.NET 10 / WPF) para gestionar inventario en almacén único, catálogo de productos, directorio de proveedores, entradas/salidas de stock, reportes CSV y configuración multimoneda (`USD`, `COP`, `EUR`) con Clean Architecture y MVVM.
+Aplicación de escritorio Windows (.NET 10 / WPF) para gestionar inventario en almacén único, catálogo de productos, directorio de proveedores, entradas/salidas de stock, tickets 80 mm, exportación CSV/PDF/Excel, persistencia relacional SQLite y configuración multimoneda (`USD`, `COP`, `EUR`) con Clean Architecture y MVVM.
 
 ## Estructura
 
 - `src/TiendaBodegas.Domain`: entidades (`Product`, `Supplier`, `StockMovement`, `Inventory`, `AppSettings`), enumeraciones (`MovementType`, `SupplierStatus`) e interfaces de repositorio.
-- `src/TiendaBodegas.Application`: servicios de aplicación (`InventoryManager`, `CatalogManager`, `SettingsManager`, `InventoryCsvExporter`), DTOs, validaciones de negocio e interfaces (`IInventoryService`, `ICatalogService`, `ISettingsService`, `IExchangeRateService`, `IInventoryExportService`).
-- `src/TiendaBodegas.Infrastructure`: persistencia JSON atómica (`JsonDataContext`), repositorios (`SupplierRepository`, `ProductRepository`, `StockMovementRepository`, `SettingsRepository`) y servicio de tasa de cambio diaria (`DailyExchangeRateService`).
-- `src/TiendaBodegas.UI`: aplicación de escritorio WPF (`net10.0-windows`) con MVVM (`CommunityToolkit.Mvvm`), diccionarios de tema (`Themes/`), convertidores (`Converters/`) e inyección de dependencias (`Microsoft.Extensions.DependencyInjection`).
+- `src/TiendaBodegas.Application`: servicios de aplicación (`InventoryManager`, `CatalogManager`, `SettingsManager`, `InventoryCsvExporter`), DTOs, validaciones de negocio e interfaces (`IInventoryService`, `ICatalogService`, `ISettingsService`, `IExchangeRateService`, `IInventoryExportService`, `IExcelExportService`, `IPdfExportService`, `IPrinterService`).
+- `src/TiendaBodegas.Infrastructure`: persistencia relacional SQLite (`SqliteDataContext`, `SqliteSchemaMigrator` con `SchemaVersions`, repositorios SQLite `SqliteSupplierRepository`, `SqliteProductRepository`, `SqliteStockMovementRepository`, `SqliteSettingsRepository`, y migrador transaccional `JsonToSqliteMigrator`), respaldo/lectura JSON legado (`JsonDataContext` y repositorios JSON), exportación PDF (`QuestPdfExportService`), exportación Excel (`ClosedXmlExcelExportService`) y tasa de cambio diaria (`DailyExchangeRateService`).
+- `src/TiendaBodegas.UI`: aplicación de escritorio WPF (`net10.0-windows`) con MVVM (`CommunityToolkit.Mvvm`), diccionarios de tema (`Themes/`), convertidores (`Converters/`), impresión térmica (`WpfPrinterService`) e inyección de dependencias (`Microsoft.Extensions.DependencyInjection`).
 - `tests/TiendaBodegas.Tests`: suite de pruebas automatizadas con `xUnit`.
 
 El código usa identificadores y comentarios XML en inglés; la interfaz y la documentación del proyecto están en español.
 
-## Estado actual (MVP 3 + MVP 4 completados al 100% — `R0`–`R10` cerrados)
+## Estado actual (MVP 4 + `N1`–`N4` completados — `R0`–`R10`, `N1`–`N4` y `E1` cerrados)
 
-- **Rama actual:** `main` (`cc10b11`, PR #4 `refactor/visual-wpf` mergeado).
-- **Dominio y persistencia JSON:** pivote de múltiples bodegas a **almacén único + Proveedores (`Supplier`)**. `JsonDataContext` persiste de forma atómica `proveedores.json`, `productos.json`, `tickets.json` y `settings.json`, conservando compatibilidad legado con `"Precio"` y filtrando registros históricos de traslados. En primer arranque sin datos siembra `4` proveedores, `12` productos y `13` movimientos.
+- **Rama actual:** `feat/r8-print-and-pdf-export` (sobre `main` `cc10b11`).
+- **Dominio y persistencia SQLite + migración JSON:** pivote de múltiples bodegas a **almacén único + Proveedores (`Supplier`)**. La aplicación opera sobre SQLite (`data/tiendabodegas.db`, esquema versionado en `SchemaVersions` v1 con claves foráneas `ON DELETE RESTRICT`). Si existen archivos JSON previos (`proveedores.json`, `productos.json`, `tickets.json`, `settings.json`) y la base SQLite está vacía, `JsonToSqliteMigrator` migra los datos dentro de una transacción conciliando conteos y saldos por producto (manteniendo compatibilidad legado con `"Precio"` y filtrando traslados históricos) y conservando los `.json` intactos como respaldo. Si no hay datos previos, siembra `4` proveedores, `12` productos y `13` movimientos.
 - **Sistema visual y shell WPF:** tema perlado/terracota/azul frío centralizado en `Themes/Colors.xaml` y `Themes/Controls.xaml`, con barra lateral de 6 secciones (`DASHBOARD`, `INVENTARIO` con contador dinámico, `PROVEEDORES`, `VENTAS`, `REPORTES`, `AJUSTES`) e icono `assets/Inventory.ico`.
-- **Vistas operativas (`R3`–`R9`):**
+- **Vistas operativas (`R3`–`R9`, `N1`–`N3`):**
   - `DASHBOARD`: distribución de stock por categoría en barras horizontales y panel `Alertas de Reposición` enlazado al inventario filtrado.
-  - `INVENTARIO`: 4 tarjetas KPI clicables, buscador en tiempo real, filtros (`Categoría`, `Estado`, `Proveedor`), ordenamiento multi-página, paginación dinámica adaptada al alto de pantalla (mínimo 6 filas), exportación CSV (RFC-4180), modal `ProductFormWindow` y confirmación `ConfirmDialogWindow`.
+  - `INVENTARIO`: 4 tarjetas KPI clicables, buscador en tiempo real, filtros (`Categoría`, `Estado`, `Proveedor`), ordenamiento multi-página, paginación dinámica adaptada al alto de pantalla (mínimo 6 filas), exportación CSV (RFC-4180) y Excel (`.xlsx`), modal `ProductFormWindow` y confirmación `ConfirmDialogWindow`.
   - `PROVEEDORES`: directorio `PRV-XX` (`Activo` / `En revisión`), modal `SupplierFormWindow` con `INotifyDataErrorInfo` y bloqueo de eliminación si existen productos vinculados.
-  - `VENTAS`: historial en tarjetas limpias con fechas relativas (`Hoy` / `Ayer`), filtros por rango de fechas y tipo (`Entrada` / `Salida`), y modal `MovementFormWindow`.
-  - `REPORTES`: descarga CSV de valoración por categoría (costo de compra, valor de venta y margen) y auditoría de rotación baja (30 días sin movimientos) con vista previa y exportación CSV.
-  - `AJUSTES` y moneda diaria: preferencias persistidas en `settings.json` (`NombreNegocio`, `MonedaPrincipal` `USD`/`COP`/`EUR`, `UmbralBajoStock`). Al cambiar de moneda, `DailyExchangeRateService` consulta la tasa del día (`open.er-api.com` con failover a `currency-api` en jsDelivr, caché por día y respaldo local sin conexión), convierte precios con `Product.ConvertPrices` y propaga en vivo encabezados (`PRECIO COMPRA (COP)`), montos (`CurrencyAmountConverter`, ej. `` `COP $24,500` `` o `` `$12.00` ``) y parseo de separadores de miles colombianos en `ProductFormWindow`.
-- **Pruebas automatizadas:** `50/50` pruebas xUnit pasando en `9` clases (`CatalogManagerTests`, `DashboardReportsSettingsTests`, `InventoryManagerTests`, `InventoryViewModelTests`, `JsonDataContextTests`, `Mvp1ViewModelsAndDiTests`, `Mvp2CrudViewModelsTests`, `Mvp3MovementsViewModelsTests`, `ThemeResourcesTests`) con `0` advertencias y `0` errores.
+  - `VENTAS`: historial en tarjetas limpias con fechas relativas (`Hoy` / `Ayer`), filtros por rango de fechas y tipo (`Entrada` / `Salida`), impresión de ticket térmico 80 mm (`WpfPrinterService`) y modal `MovementFormWindow`.
+  - `REPORTES`: valoración por categoría (CSV, PDF y Excel), inventario general (PDF y Excel) y auditoría de rotación baja (30 días sin movimientos) con vista previa y exportación CSV/PDF/Excel.
+  - `AJUSTES` y moneda diaria: preferencias persistidas en SQLite (`BusinessName`, `CurrencyCode` `USD`/`COP`/`EUR`, `DefaultLowStockThreshold`). Al cambiar de moneda, `DailyExchangeRateService` consulta la tasa del día (`open.er-api.com` con failover a `currency-api` en jsDelivr, caché por día y respaldo local sin conexión), convierte precios con `Product.ConvertPrices` y propaga en vivo encabezados (`PRECIO COMPRA (COP)`), montos (`CurrencyAmountConverter`, ej. `` `COP $24,500` `` o `` `$12.00` ``) y parseo de separadores de miles colombianos en `ProductFormWindow`.
+- **Pruebas automatizadas:** `61/61` pruebas xUnit pasando en `12` clases (`CatalogManagerTests`, `DashboardReportsSettingsTests`, `ExcelExportTests`, `InventoryManagerTests`, `InventoryViewModelTests`, `JsonDataContextTests`, `Mvp1ViewModelsAndDiTests`, `Mvp2CrudViewModelsTests`, `Mvp3MovementsViewModelsTests`, `SqlitePersistenceAndMigrationTests`, `ThemeResourcesTests`, `TicketAndPdfExportTests`) con `0` advertencias y `0` errores.
 
 ## Compilación, ejecución y pruebas
 
@@ -48,14 +48,14 @@ dotnet test TiendaBodegas.slnx
 ### Próximas etapas — NECESARIO (`N1`–`N7`)
 - [x] **N1. Tickets imprimibles (80 mm):** `IPrinterService` + `WpfPrinterService` con armado de `FlowDocument` (~278 DIPs) desacoplado de `PrintDialog`.
 - [x] **N2. Exportación PDF:** `IPdfExportService` + `QuestPdfExportService` con QuestPDF (`LicenseType.Community`), reutilizando DTOs y formato de moneda activo.
-- [ ] **N3. Reportes Excel:** exportación `.xlsx` con ClosedXML.
-- [ ] **N4. Migración a SQLite (MVP 5):** esquema relacional (`Suppliers`, `Products`, `StockMovements`, `Settings`), repositorios SQL, migraciones versionadas y migrador transaccional desde JSON (ver `docs/camino-a-sql.md`).
-- [ ] **N5. Almacenamiento en usuario, backup y observabilidad (MVP 5):** evaluar traslado de `data/` a `%LOCALAPPDATA%\TiendaBodegas`, copia de seguridad/restauración, logging con Serilog y manejo global de excepciones.
+- [x] **N3. Reportes Excel:** `IExcelExportService` + `ClosedXmlExcelExportService` con ClosedXML (`0.105.1`), generando libros `.xlsx` formateados para valoración, inventario y auditoría de rotación baja.
+- [x] **N4. Migración a SQLite (MVP 5):** esquema relacional versionado (`SchemaVersions` v1: `Suppliers`, `Products`, `StockMovements`, `Settings`), `SqliteDataContext`, repositorios SQLite y migrador transaccional `JsonToSqliteMigrator` con conciliación de conteos y saldos (ver `docs/camino-a-sql.md`).
+- [ ] **N5. Almacenamiento en usuario, backup y observabilidad (MVP 5):** evaluar traslado de `data/` a `%LOCALAPPDATA%\StockFlow`, copia de seguridad/restauración, logging con Serilog y manejo global de excepciones.
 - [ ] **N6. Empaquetado y release (MVP 5):** pulido final de escritorio, instalador Windows (Inno Setup o MSIX) y `README.md` final con capturas.
 - [ ] **N7. Versionado de `docs/`:** decidir si `docs/` permanece ignorado localmente en `.gitignore` o pasa a versionarse en Git.
 
 ### Backlog diferido — ESPERA (`E1`–`E6`)
-- [ ] **E1.** Decidir si se retira o implementa el código heredado sin usar (`Shipment`, `DispatchManager`, `ShipmentPlanDto` y `PrinterService`).
+- [x] **E1.** Retirado el código heredado sin uso (`Shipment`, `ShipmentStatus`, `DispatchManager`, `ShipmentPlanDto` y `PrinterService`).
 - [ ] **E2.** Soporte multi-bodega / sucursales o motor SQL cliente-servidor.
 - [ ] **E3.** Autenticación, usuarios y roles reales (el pie `Admin / Usuario` es actualmente informativo).
 - [ ] **E4.** Lectura y generación de códigos de barras / QR.

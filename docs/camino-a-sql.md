@@ -1,21 +1,19 @@
 # Camino a persistencia SQL
 
-**Estado: pendiente.** La aplicación actual persiste datos en JSON. Este documento marca una ruta de trabajo futura; no se ha elegido proveedor SQL ni se ha implementado una migración.
+**Estado: implementado (N4 — SQLite local activo).** La aplicación opera sobre SQLite (`data/tiendabodegas.db`) mediante `Microsoft.Data.Sqlite 10.0.15`, con migración transaccional automática desde JSON legado.
 
-## Etapas propuestas
+## Arquitectura implementada
 
-1. **Elegir proveedor y alcance.** Decidir entre SQLite para una instalación local sencilla o un servidor SQL si se requiere acceso concurrente desde varios procesos o equipos. Registrar también versión, entorno y estrategia de copias de seguridad.
-2. **Definir el modelo relacional.** Crear tablas para `Suppliers`, `Products` (`Category`, `SupplierId`, `PurchasePrice`, `SalePrice`, `MinStock`), `StockMovements` (`Entry` y `Exit` sobre almacén único), `Settings` (`AppSettings`) y, si se decide conservar despacho en **E1**, `Shipments`. Definir claves primarias, claves foráneas, índices y reglas de nulabilidad.
-3. **Separar persistencia del dominio.** Completar las interfaces de repositorio y hacer que los servicios de aplicación dependan de ellas, sin acoplarlos al proveedor SQL.
-4. **Implementar el adaptador SQL.** Añadir el proveedor y configuración mediante dependencias del proyecto de infraestructura. Mantener credenciales fuera del código fuente y usar configuración segura por entorno si el proveedor requiere secretos.
-5. **Crear esquema versionado.** Añadir migraciones o scripts versionados para crear y evolucionar el esquema. Aplicarlos de forma explícita en entornos controlados, con copia previa y procedimiento de reversión.
-6. **Migrar datos JSON.** Escribir una herramienta repetible que lea los archivos actuales, valide referencias e IDs y cargue los datos dentro de una transacción. Conservar los JSON como respaldo hasta verificar conteos y saldos.
-7. **Verificar y cambiar el arranque.** Probar altas, consultas, movimientos y reinicio de la aplicación contra SQL; comparar existencias con los datos de origen y documentar configuración, restauración y operación.
+1. **Proveedor y alcance.** Se adoptó SQLite local (`tiendabodegas.db`) mediante `SqliteDataContext` con `Pooling = false` (evitando bloqueos de archivo en Windows), `PRAGMA foreign_keys = ON` y `PRAGMA busy_timeout = 5000`.
+2. **Modelo relacional (`SchemaVersions` v1).** Gestionado por `SqliteSchemaMigrator`:
+   - `Suppliers` (`Id`, `Code` único `COLLATE NOCASE`, `Name` `COLLATE NOCASE`, `Contact`, `MainCategory`, `Status` `0|1`) + índice `IX_Suppliers_Name`.
+   - `Products` (`Id`, `Name`, `SKU` único `COLLATE NOCASE`, `Category`, `SupplierId` nullable con `FOREIGN KEY ... ON DELETE RESTRICT`, `PurchasePrice`, `SalePrice`, `MinStock >= 0`) + índices `IX_Products_SupplierId`, `IX_Products_Category`.
+   - `StockMovements` (`Id`, `Date` ISO-8601 `"O"`, `ProductId` con `FOREIGN KEY ... ON DELETE RESTRICT`, `Quantity > 0`, `MovementType` `0|1`, `Notes`) + índices `IX_StockMovements_ProductId`, `IX_StockMovements_Date`, `IX_StockMovements_MovementType`.
+   - `Settings` (`Id = 1`, `BusinessName`, `CurrencyCode`, `DefaultLowStockThreshold >= 0`).
+3. **Separación de persistencia.** `SqliteSupplierRepository`, `SqliteProductRepository` (incluyendo `UpdateRange` transaccional), `SqliteStockMovementRepository` y `SqliteSettingsRepository` implementan las interfaces existentes de `TiendaBodegas.Domain.Interfaces` sin modificar la capa `Application` ni los `ViewModels`.
+4. **Migración automática desde JSON.** En `DependencyInjection.InitializeDatabase`, cuando SQLite está vacío y existen archivos JSON previos (`proveedores.json`, `productos.json`, `tickets.json`, `settings.json`), `JsonToSqliteMigrator.MigrateIfNeeded` valida IDs y referencias, inserta todo en una única transacción, concilia conteos y saldos netos por producto (reviertiendo con `Rollback` ante cualquier inconsistencia) y conserva los archivos `.json` intactos como respaldo.
 
-## Criterios antes de retirar JSON
+## Pendiente en etapas posteriores (N5–N6)
 
-- Conteos de proveedores (`Suppliers`), productos (`Products`), movimientos (`StockMovements`) y ajustes (`Settings`) conciliados.
-- Existencias globales por producto coincidentes antes y después de la migración.
-- Restricciones de integridad y transacciones verificadas.
-- Copia de seguridad y restauración probadas.
-- Proveedor, cadena de conexión y despliegue documentados para cada entorno.
+- Trasladar la ruta de `data/` junto al ejecutable a `%LOCALAPPDATA%\TiendaBodegas` con copia de seguridad y restauración desde UI (**N5**).
+- Empaquetado e instalador Windows (**N6**).

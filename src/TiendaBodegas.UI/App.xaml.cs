@@ -1,18 +1,17 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
-using TiendaBodegas.Infrastructure.Persistence.Json;
 
 namespace TiendaBodegas.UI;
 
 /// <summary>
-/// WPF application entry point responsible for configuring DI, loading persisted JSON, and saving on exit.
+/// WPF application entry point responsible for configuring DI, initializing SQLite persistence, and disposing resources on exit.
 /// </summary>
 public partial class App : System.Windows.Application
 {
     private ServiceProvider? _serviceProvider;
 
     /// <summary>
-    /// Initializes the DI container, loads or seeds JSON data, and displays the main window.
+    /// Initializes the DI container, migrates or seeds SQLite data, and displays the main window.
     /// </summary>
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -29,16 +28,11 @@ public partial class App : System.Windows.Application
     }
 
     /// <summary>
-    /// Persists JSON data and disposes the DI container when the application exits.
+    /// Disposes the DI container and releases SQLite resources when the application exits.
     /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
-        if (_serviceProvider != null)
-        {
-            _serviceProvider.GetRequiredService<JsonDataContext>().SaveJson();
-            _serviceProvider.Dispose();
-        }
-
+        _serviceProvider?.Dispose();
         base.OnExit(e);
     }
 }

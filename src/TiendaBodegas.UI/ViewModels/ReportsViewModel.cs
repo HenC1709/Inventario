@@ -22,6 +22,7 @@ public partial class ReportsViewModel : ObservableObject
     private readonly IPdfExportService? _pdfExportService;
     private readonly IPrinterService? _printerService;
     private readonly ISettingsService? _settingsService;
+    private readonly IExcelExportService? _excelExportService;
 
     [ObservableProperty]
     private bool _hasGeneratedAudit;
@@ -64,7 +65,8 @@ public partial class ReportsViewModel : ObservableObject
         IDialogService dialogService,
         IPdfExportService? pdfExportService = null,
         IPrinterService? printerService = null,
-        ISettingsService? settingsService = null)
+        ISettingsService? settingsService = null,
+        IExcelExportService? excelExportService = null)
     {
         _inventoryService = inventoryService;
         _exportService = exportService;
@@ -72,6 +74,7 @@ public partial class ReportsViewModel : ObservableObject
         _pdfExportService = pdfExportService;
         _printerService = printerService;
         _settingsService = settingsService;
+        _excelExportService = excelExportService;
     }
 
     /// <summary>
@@ -275,6 +278,98 @@ public partial class ReportsViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Generates a formatted Excel workbook for category valuation using the active currency.
+    /// </summary>
+    [RelayCommand]
+    public void ExportValuationExcel()
+    {
+        ClearStatus();
+        if (_excelExportService == null)
+        {
+            SetErrorStatus("El servicio de exportación Excel no está disponible.");
+            return;
+        }
+
+        var report = _inventoryService.GetCategoryValuationReport().ToList();
+        if (report.Count == 0)
+        {
+            SetErrorStatus("No hay productos registrados para generar la valoración.");
+            return;
+        }
+
+        TrySaveBinaryReport(
+            "valoracion_inventario.xlsx",
+            "Libro de Excel (*.xlsx)|*.xlsx",
+            () =>
+            {
+                var settings = _settingsService?.GetSettings();
+                return _excelExportService.GenerateValuationExcel(report, settings?.BusinessName, settings?.CurrencyCode);
+            },
+            "Reporte de valoración Excel exportado correctamente.",
+            "No se pudo exportar el Excel de valoración");
+    }
+
+    /// <summary>
+    /// Exports the 30-day low-rotation product audit to a formatted Excel workbook.
+    /// </summary>
+    [RelayCommand]
+    public void ExportLowRotationExcel()
+    {
+        ClearStatus();
+        if (_excelExportService == null)
+        {
+            SetErrorStatus("El servicio de exportación Excel no está disponible.");
+            return;
+        }
+
+        if (!HasGeneratedAudit)
+            PopulateLowRotationAudit();
+
+        TrySaveBinaryReport(
+            "productos_rotacion_baja.xlsx",
+            "Libro de Excel (*.xlsx)|*.xlsx",
+            () =>
+            {
+                var settings = _settingsService?.GetSettings();
+                return _excelExportService.GenerateLowRotationExcel(LowRotationItems, settings?.BusinessName, DefaultAuditDays);
+            },
+            "Auditoría de rotación baja exportada a Excel correctamente.",
+            "No se pudo exportar el Excel de auditoría");
+    }
+
+    /// <summary>
+    /// Exports the full product inventory summary to a formatted Excel workbook.
+    /// </summary>
+    [RelayCommand]
+    public void ExportInventoryExcel()
+    {
+        ClearStatus();
+        if (_excelExportService == null)
+        {
+            SetErrorStatus("El servicio de exportación Excel no está disponible.");
+            return;
+        }
+
+        var items = _inventoryService.GetProductStockSummary().ToList();
+        if (items.Count == 0)
+        {
+            SetErrorStatus("No hay productos registrados para exportar.");
+            return;
+        }
+
+        TrySaveBinaryReport(
+            "inventario_productos.xlsx",
+            "Libro de Excel (*.xlsx)|*.xlsx",
+            () =>
+            {
+                var settings = _settingsService?.GetSettings();
+                return _excelExportService.GenerateInventoryExcel(items, settings?.BusinessName, settings?.CurrencyCode);
+            },
+            "Reporte de inventario Excel exportado correctamente.",
+            "No se pudo exportar el Excel de inventario");
+    }
+
+    /// <summary>
     /// Prints an 80 mm thermal receipt for the most recent inventory movement.
     /// </summary>
     [RelayCommand]
@@ -316,6 +411,28 @@ public partial class ReportsViewModel : ObservableObject
             : $"{LowRotationItems.Count} producto(s) sin movimientos en los últimos {DefaultAuditDays} días.";
 
         OnPropertyChanged(nameof(HasNoLowRotationItems));
+    }
+
+    private void TrySaveBinaryReport(
+        string defaultFileName,
+        string filter,
+        Func<byte[]> generateBytes,
+        string successMessage,
+        string errorPrefix)
+    {
+        var path = _dialogService.ShowSaveFileDialog(defaultFileName, filter);
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        try
+        {
+            File.WriteAllBytes(path, generateBytes());
+            SetSuccessStatus(successMessage);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            SetErrorStatus($"{errorPrefix}: {ex.Message}");
+        }
     }
 
     private void ClearStatus()
