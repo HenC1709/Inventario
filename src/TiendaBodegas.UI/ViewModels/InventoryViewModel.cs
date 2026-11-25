@@ -244,6 +244,13 @@ public partial class InventoryViewModel : ObservableObject
     /// </summary>
     public void LoadData()
     {
+        if (_settingsService != null)
+        {
+            var settings = _settingsService.GetSettings();
+            CurrencyCode = settings.CurrencyCode;
+            CurrencySymbol = settings.CurrencySymbol;
+        }
+
         _allItems = _inventoryService.GetProductStockSummary().ToList();
 
         TotalProductsCount = _allItems.Count;

@@ -1,8 +1,10 @@
 using System.Globalization;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TiendaBodegas.Application.DTOs;
 using TiendaBodegas.Application.Interfaces;
+using TiendaBodegas.UI.Services;
 
 namespace TiendaBodegas.UI.ViewModels;
 
@@ -21,6 +23,9 @@ public partial class SettingsViewModel : ValidatableViewModel
 
     private readonly ISettingsService _settingsService;
     private readonly IExchangeRateService? _exchangeRateService;
+    private readonly IDatabaseBackupService? _backupService;
+    private readonly IDialogService? _dialogService;
+    private readonly IAppLogger? _logger;
     private bool _isLoading;
     private string _savedCurrencyCode = "USD";
     private CancellationTokenSource? _previewCts;
@@ -91,14 +96,35 @@ public partial class SettingsViewModel : ValidatableViewModel
     public string SaveButtonText => IsBusy ? "Convirtiendo y guardando..." : "Guardar Cambios";
 
     /// <summary>
+    /// Gets the active per-user directory hosting the database, backups, and diagnostic logs.
+    /// </summary>
+    public string DataDirectoryPath => _backupService?.ActiveDataDirectory ?? string.Empty;
+
+    /// <summary>
+    /// Gets a value indicating whether database backup and restore operations are available.
+    /// </summary>
+    public bool HasBackupService => _backupService != null && _dialogService != null;
+
+    /// <summary>
+    /// Gets the application version and persistence summary caption.
+    /// </summary>
+    public string AppVersionText => "StockFlow v1.0.0 — Persistencia SQLite local";
+
+    /// <summary>
     /// Initializes a new instance of <see cref="SettingsViewModel"/> and loads current settings.
     /// </summary>
     public SettingsViewModel(
         ISettingsService settingsService,
-        IExchangeRateService? exchangeRateService = null)
+        IExchangeRateService? exchangeRateService = null,
+        IDatabaseBackupService? backupService = null,
+        IDialogService? dialogService = null,
+        IAppLogger? logger = null)
     {
         _settingsService = settingsService;
         _exchangeRateService = exchangeRateService;
+        _backupService = backupService;
+        _dialogService = dialogService;
+        _logger = logger;
         LoadData();
     }
 
@@ -165,7 +191,7 @@ public partial class SettingsViewModel : ValidatableViewModel
     }
 
     /// <summary>
-    /// Validates and persists all modified preferences into <c>settings.json</c>,
+    /// Validates and persists all modified preferences into local SQLite storage,
     /// converting catalog prices at the daily exchange rate whenever the currency changed.
     /// </summary>
     [RelayCommand]
@@ -212,6 +238,75 @@ public partial class SettingsViewModel : ValidatableViewModel
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Prompts for a destination file and writes a verified SQLite backup copy.
+    /// </summary>
+    [RelayCommand]
+    public void CreateBackup()
+    {
+        ClearStatus();
+        if (_backupService == null || _dialogService == null)
+        {
+            SetErrorStatus("El servicio de copias de seguridad no está disponible.");
+            return;
+        }
+
+        var destinationPath = _dialogService.ShowSaveFileDialog(
+            $"StockFlow_Respaldo_{DateTime.Now:yyyyMMdd_HHmm}.db",
+            "Base de datos SQLite (*.db)|*.db");
+
+        if (string.IsNullOrWhiteSpace(destinationPath))
+            return;
+
+        try
+        {
+            _backupService.CreateBackup(destinationPath);
+            SetSuccessStatus("Copia de seguridad creada correctamente.");
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            _logger?.Error("Error al crear copia de seguridad desde Ajustes.", ex);
+            SetErrorStatus($"No se pudo crear la copia de seguridad: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Prompts for a SQLite backup file, requests confirmation, and restores it after creating a pre-restore safety copy.
+    /// </summary>
+    [RelayCommand]
+    public void RestoreBackup()
+    {
+        ClearStatus();
+        if (_backupService == null || _dialogService == null)
+        {
+            SetErrorStatus("El servicio de copias de seguridad no está disponible.");
+            return;
+        }
+
+        var sourcePath = _dialogService.ShowOpenFileDialog("Base de datos SQLite (*.db;*.sqlite)|*.db;*.sqlite");
+        if (string.IsNullOrWhiteSpace(sourcePath))
+            return;
+
+        if (!_dialogService.Confirm(
+            "Se reemplazarán los datos actuales por los de la copia seleccionada. Se guardará automáticamente un respaldo previo antes de restaurar.",
+            "¿Restaurar copia de seguridad?"))
+        {
+            return;
+        }
+
+        try
+        {
+            _backupService.RestoreBackup(sourcePath);
+            LoadData();
+            SetSuccessStatus("Copia de seguridad restaurada correctamente.");
+        }
+        catch (Exception ex) when (ex is ArgumentException or FileNotFoundException or InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            _logger?.Error("Error al restaurar copia de seguridad desde Ajustes.", ex);
+            SetErrorStatus($"No se pudo restaurar la copia de seguridad: {ex.Message}");
         }
     }
 

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using TiendaBodegas.Application.Interfaces;
 
 namespace TiendaBodegas.UI.ViewModels;
 
@@ -54,7 +55,8 @@ public partial class MainViewModel : ObservableObject
         SuppliersViewModel suppliersViewModel,
         MovementsViewModel movementsViewModel,
         ReportsViewModel reportsViewModel,
-        SettingsViewModel settingsViewModel)
+        SettingsViewModel settingsViewModel,
+        IDatabaseBackupService? backupService = null)
     {
         _dashboardViewModel = dashboardViewModel;
         _inventoryViewModel = inventoryViewModel;
@@ -68,6 +70,9 @@ public partial class MainViewModel : ObservableObject
         _inventoryViewModel.TotalProductCountChanged += count => InventoryCount = count;
         _dashboardViewModel.NavigateToInventoryRequested += ShowInventory;
         _dashboardViewModel.NavigateToCriticalAlertsRequested += ShowInventoryLowStock;
+
+        if (backupService != null)
+            backupService.DatabaseRestored += OnDatabaseRestored;
     }
 
     partial void OnActiveSectionChanged(NavigationSection value)
@@ -165,5 +170,16 @@ public partial class MainViewModel : ObservableObject
         ActiveSection = NavigationSection.Settings;
         CurrentViewModel = _settingsViewModel;
         CurrentSectionTitle = "Ajustes";
+    }
+
+    private void OnDatabaseRestored()
+    {
+        _settingsViewModel.LoadData();
+        _inventoryViewModel.LoadData();
+        _suppliersViewModel.LoadData();
+        _movementsViewModel.LoadData();
+        _dashboardViewModel.LoadData();
+        _reportsViewModel.LoadData();
+        InventoryCount = _inventoryViewModel.TotalProductsCount;
     }
 }

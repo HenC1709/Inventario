@@ -8,96 +8,151 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
-    <StackPanel>
-        <!-- Cabecera -->
-        <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitleTextStyle}" />
-        <TextBlock Text="{Binding Subtitle}"
-                   Style="{StaticResource PageSubtitleTextStyle}"
-                   Margin="0,3,0,20" />
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            <!-- Cabecera -->
+            <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitleTextStyle}" />
+            <TextBlock Text="{Binding Subtitle}"
+                       Style="{StaticResource PageSubtitleTextStyle}"
+                       Margin="0,3,0,20" />
 
-        <!-- Banner de estado -->
-        <Border Style="{StaticResource StatusBannerBorderStyle}"
-                MaxWidth="660"
-                HorizontalAlignment="Left">
-            <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusBannerTextStyle}" />
-        </Border>
+            <!-- Banner de estado -->
+            <Border Style="{StaticResource StatusBannerBorderStyle}"
+                    MaxWidth="660"
+                    HorizontalAlignment="Left">
+                <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusBannerTextStyle}" />
+            </Border>
 
-        <!-- Tarjeta de Formulario -->
-        <Border Style="{StaticResource CardBorderStyle}"
-                MaxWidth="660"
-                HorizontalAlignment="Left"
-                Padding="24">
-            <StackPanel Width="612">
-                <TextBlock Text="Nombre del Negocio / Almacén"
-                           FontSize="13"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Margin="0,0,0,6" />
-                <TextBox Text="{Binding BusinessName, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                         Background="{StaticResource Pearl50Brush}"
-                         Tag="Ej. Almacén Central"
-                         Style="{StaticResource ModernTextBoxStyle}" />
-                <TextBlock Text="{Binding BusinessNameError}" Style="{StaticResource FieldErrorTextStyle}" />
+            <!-- Tarjeta de Formulario -->
+            <Border Style="{StaticResource CardBorderStyle}"
+                    MaxWidth="660"
+                    HorizontalAlignment="Left"
+                    Padding="24">
+                <StackPanel Width="612">
+                    <TextBlock Text="Nombre del Negocio / Almacén"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,0,0,6" />
+                    <TextBox Text="{Binding BusinessName, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                             Background="{StaticResource Pearl50Brush}"
+                             Tag="Ej. Almacén Central"
+                             Style="{StaticResource ModernTextBoxStyle}" />
+                    <TextBlock Text="{Binding BusinessNameError}" Style="{StaticResource FieldErrorTextStyle}" />
 
-                <Grid Margin="0,18,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+                    <Grid Margin="0,18,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Moneda Principal"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Margin="0,0,0,6" />
-                        <ComboBox ItemsSource="{Binding CurrencyOptions}"
-                                  SelectedValue="{Binding SelectedCurrencyCode, Mode=TwoWay}"
-                                  SelectedValuePath="Code"
-                                  DisplayMemberPath="Label"
-                                  IsEnabled="{Binding IsNotBusy}"
-                                  Background="{StaticResource Pearl50Brush}"
-                                  Style="{StaticResource ModernComboBoxStyle}" />
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Moneda Principal"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,0,6" />
+                            <ComboBox ItemsSource="{Binding CurrencyOptions}"
+                                      SelectedValue="{Binding SelectedCurrencyCode, Mode=TwoWay}"
+                                      SelectedValuePath="Code"
+                                      DisplayMemberPath="Label"
+                                      IsEnabled="{Binding IsNotBusy}"
+                                      Background="{StaticResource Pearl50Brush}"
+                                      Style="{StaticResource ModernComboBoxStyle}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Umbral de Bajo Stock"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,0,6" />
+                            <TextBox Text="{Binding LowStockThresholdText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                                     IsEnabled="{Binding IsNotBusy}"
+                                     Background="{StaticResource Pearl50Brush}"
+                                     Tag="10"
+                                     Style="{StaticResource ModernTextBoxStyle}" />
+                            <TextBlock Text="{Binding LowStockThresholdError}" Style="{StaticResource FieldErrorTextStyle}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Aviso de tasa de cambio del día -->
+                    <Border Background="{StaticResource Cool50Brush}"
+                            BorderBrush="{StaticResource Cool200Brush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12,9"
+                            Margin="0,14,0,0"
+                            Visibility="{Binding HasExchangeRatePreview, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding ExchangeRatePreviewText}"
+                                   FontSize="12"
+                                   FontWeight="Medium"
+                                   Foreground="{StaticResource Cool700Brush}"
+                                   TextWrapping="Wrap" />
+                    </Border>
+
+                    <Button Content="{Binding SaveButtonText}"
+                            Command="{Binding SaveSettingsCommand}"
+                            IsEnabled="{Binding IsNotBusy}"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            HorizontalAlignment="Left"
+                            Margin="0,22,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Tarjeta de Almacenamiento Local y Respaldos -->
+            <Border Style="{StaticResource CardBorderStyle}"
+                    MaxWidth="660"
+                    HorizontalAlignment="Left"
+                    Padding="24"
+                    Margin="0,16,0,0">
+                <StackPanel Width="612">
+                    <TextBlock Text="Almacenamiento Local y Copias de Seguridad"
+                               Style="{StaticResource SectionHeadingTextStyle}" />
+                    <TextBlock Text="Tus datos y registros de diagnóstico se guardan de forma segura en tu carpeta local de usuario."
+                               FontSize="13"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,14" />
+
+                    <Border Background="{StaticResource Pearl50Brush}"
+                            BorderBrush="{StaticResource Pearl200Brush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="12,10">
+                        <StackPanel>
+                            <TextBlock Text="Ruta activa:"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextMutedBrush}" />
+                            <TextBlock Text="{Binding DataDirectoryPath}"
+                                       FontFamily="{StaticResource MonoFontFamily}"
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,3,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button Content="Crear Copia de Seguridad"
+                                Command="{Binding CreateBackupCommand}"
+                                IsEnabled="{Binding HasBackupService}"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Margin="0,0,10,0" />
+                        <Button Content="Restaurar Copia..."
+                                Command="{Binding RestoreBackupCommand}"
+                                IsEnabled="{Binding HasBackupService}"
+                                Style="{StaticResource SecondaryCoolButtonStyle}" />
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="Umbral de Bajo Stock"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Margin="0,0,0,6" />
-                        <TextBox Text="{Binding LowStockThresholdText, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                                 IsEnabled="{Binding IsNotBusy}"
-                                 Background="{StaticResource Pearl50Brush}"
-                                 Tag="10"
-                                 Style="{StaticResource ModernTextBoxStyle}" />
-                        <TextBlock Text="{Binding LowStockThresholdError}" Style="{StaticResource FieldErrorTextStyle}" />
-                    </StackPanel>
-                </Grid>
-
-                <!-- Aviso de tasa de cambio del día -->
-                <Border Background="{StaticResource Cool50Brush}"
-                        BorderBrush="{StaticResource Cool200Brush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Padding="12,9"
-                        Margin="0,14,0,0"
-                        Visibility="{Binding HasExchangeRatePreview, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding ExchangeRatePreviewText}"
-                               FontSize="12"
-                               FontWeight="Medium"
-                               Foreground="{StaticResource Cool700Brush}"
-                               TextWrapping="Wrap" />
-                </Border>
-
-                <Button Content="{Binding SaveButtonText}"
-                        Command="{Binding SaveSettingsCommand}"
-                        IsEnabled="{Binding IsNotBusy}"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        HorizontalAlignment="Left"
-                        Margin="0,22,0,0" />
-            </StackPanel>
-        </Border>
-    </StackPanel>
+                    <TextBlock Text="{Binding AppVersionText}"
+                               FontSize="11"
+                               Foreground="{StaticResource TextSubtleBrush}"
+                               Margin="0,14,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

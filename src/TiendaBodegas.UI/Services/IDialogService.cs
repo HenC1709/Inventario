@@ -31,4 +31,9 @@ public interface IDialogService
     /// Opens a save-file dialog and returns the selected file path, or null if cancelled.
     /// </summary>
     string? ShowSaveFileDialog(string defaultFileName, string filter);
+
+    /// <summary>
+    /// Opens an open-file dialog and returns the selected existing file path, or null if cancelled.
+    /// </summary>
+    string? ShowOpenFileDialog(string filter) => null;
 }

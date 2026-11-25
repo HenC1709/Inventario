@@ -4,6 +4,7 @@ using TiendaBodegas.Application.Services;
 using TiendaBodegas.Domain.Entities;
 using TiendaBodegas.Domain.Enums;
 using TiendaBodegas.Domain.Interfaces;
+using TiendaBodegas.Infrastructure.Persistence;
 using TiendaBodegas.Infrastructure.Persistence.Json;
 using TiendaBodegas.Infrastructure.Persistence.Sqlite;
 using TiendaBodegas.Infrastructure.Persistence.Sqlite.Repositories;
@@ -27,6 +28,9 @@ public static class DependencyInjection
 
         services.AddSingleton(_ => new JsonDataContext(dataDirectory));
         services.AddSingleton(_ => new SqliteDataContext(dataDirectory));
+        services.AddSingleton<IAppLogger>(sp =>
+            new SerilogAppLogger(AppDataPaths.GetLogsDirectory(sp.GetRequiredService<SqliteDataContext>().DataDirectory)));
+        services.AddSingleton<IDatabaseBackupService, SqliteBackupService>();
 
         services.AddSingleton<ISupplierRepository, SqliteSupplierRepository>();
         services.AddSingleton<IProductRepository, SqliteProductRepository>();
