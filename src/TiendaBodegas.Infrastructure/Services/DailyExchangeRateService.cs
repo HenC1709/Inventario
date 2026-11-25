@@ -199,7 +199,7 @@ public class DailyExchangeRateService : IExchangeRateService
         {
             Timeout = TimeSpan.FromSeconds(8)
         };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("TiendaBodegas/1.0");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("StockFlow/1.0");
         return client;
     }
 }

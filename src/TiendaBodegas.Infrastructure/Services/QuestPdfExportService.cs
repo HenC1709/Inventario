@@ -321,7 +321,7 @@ public class QuestPdfExportService : IPdfExportService
     {
         container.BorderTop(1).BorderColor(BorderLightHex).PaddingTop(6).Row(row =>
         {
-            row.RelativeItem().Text("TiendaBodegas — Documento administrativo generado localmente")
+            row.RelativeItem().Text("StockFlow — Documento administrativo generado localmente")
                 .FontSize(8)
                 .FontColor(TextMutedHex);
 

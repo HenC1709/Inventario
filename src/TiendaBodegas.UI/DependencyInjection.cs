@@ -5,7 +5,8 @@ using TiendaBodegas.Domain.Entities;
 using TiendaBodegas.Domain.Enums;
 using TiendaBodegas.Domain.Interfaces;
 using TiendaBodegas.Infrastructure.Persistence.Json;
-using TiendaBodegas.Infrastructure.Persistence.Repositories;
+using TiendaBodegas.Infrastructure.Persistence.Sqlite;
+using TiendaBodegas.Infrastructure.Persistence.Sqlite.Repositories;
 using TiendaBodegas.Infrastructure.Services;
 using TiendaBodegas.UI.Services;
 using TiendaBodegas.UI.ViewModels;
@@ -25,16 +26,18 @@ public static class DependencyInjection
         QuestPdfExportService.ConfigureLicenseOnce();
 
         services.AddSingleton(_ => new JsonDataContext(dataDirectory));
+        services.AddSingleton(_ => new SqliteDataContext(dataDirectory));
 
-        services.AddSingleton<ISupplierRepository, SupplierRepository>();
-        services.AddSingleton<IProductRepository, ProductRepository>();
-        services.AddSingleton<IStockMovementRepository, StockMovementRepository>();
-        services.AddSingleton<ISettingsRepository, SettingsRepository>();
+        services.AddSingleton<ISupplierRepository, SqliteSupplierRepository>();
+        services.AddSingleton<IProductRepository, SqliteProductRepository>();
+        services.AddSingleton<IStockMovementRepository, SqliteStockMovementRepository>();
+        services.AddSingleton<ISettingsRepository, SqliteSettingsRepository>();
         services.AddSingleton<IExchangeRateService, DailyExchangeRateService>();
         services.AddSingleton<IInventoryService, InventoryManager>();
         services.AddSingleton<ICatalogService, CatalogManager>();
         services.AddSingleton<ISettingsService, SettingsManager>();
         services.AddSingleton<IInventoryExportService, InventoryCsvExporter>();
+        services.AddSingleton<IExcelExportService, ClosedXmlExcelExportService>();
         services.AddSingleton<IPdfExportService, QuestPdfExportService>();
         services.AddSingleton<IPrinterService, WpfPrinterService>();
         services.AddSingleton<IDialogService, DialogService>();
@@ -52,18 +55,21 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Loads persisted JSON data and populates sample seed records when the database is empty.
+    /// Initializes the SQLite schema, migrates legacy JSON data if present, and seeds sample records when empty.
     /// </summary>
     public static void InitializeDatabase(IServiceProvider serviceProvider)
     {
-        var context = serviceProvider.GetRequiredService<JsonDataContext>();
-        context.LoadJson();
+        var sqliteContext = serviceProvider.GetRequiredService<SqliteDataContext>();
+        sqliteContext.InitializeSchema();
 
-        if (context.Suppliers.Any() || context.Products.Any())
-            return;
+        JsonToSqliteMigrator.MigrateIfNeeded(sqliteContext.DataDirectory, sqliteContext);
 
         var supplierRepository = serviceProvider.GetRequiredService<ISupplierRepository>();
         var productRepository = serviceProvider.GetRequiredService<IProductRepository>();
+
+        if (supplierRepository.GetAll().Any() || productRepository.GetAll().Any())
+            return;
+
         var inventoryService = serviceProvider.GetRequiredService<IInventoryService>();
 
         var north = new Supplier("Distribuidora del Norte S.A.", "contacto@distnorte.com", "Alimentos", SupplierStatus.Active);

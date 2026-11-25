@@ -40,8 +40,16 @@ public class StockMovement
     /// Initializes a new stock movement (entry or exit) with the current timestamp.
     /// </summary>
     public StockMovement(int productId, int quantity, MovementType movementType, string notes = "")
+        : this(productId, quantity, movementType, notes, DateTime.Now)
     {
-        Date = DateTime.Now;
+    }
+
+    /// <summary>
+    /// Initializes a stock movement (entry or exit) with an explicit timestamp, supporting relational hydration and migrations.
+    /// </summary>
+    public StockMovement(int productId, int quantity, MovementType movementType, string notes, DateTime date)
+    {
+        Date = date;
         ProductId = productId;
         Quantity = quantity;
         MovementType = movementType;

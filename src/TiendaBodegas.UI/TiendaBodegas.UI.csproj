@@ -16,6 +16,9 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Product>StockFlow</Product>
+    <AssemblyTitle>StockFlow</AssemblyTitle>
+    <Description>Sistema de gestión de inventario, proveedores, ventas y reportes.</Description>
     <ApplicationIcon>..\..\assets\Inventory.ico</ApplicationIcon>
   </PropertyGroup>
 
