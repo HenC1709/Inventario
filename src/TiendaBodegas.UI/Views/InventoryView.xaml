@@ -374,7 +374,9 @@
                         Height="42"
                         VerticalAlignment="Top" />
 
-                <DataGrid Grid.Row="0"
+                <DataGrid x:Name="ProductsDataGrid"
+                          Grid.Row="0"
+                          SizeChanged="OnProductsDataGridSizeChanged"
                           ItemsSource="{Binding PagedItems}"
                           AutoGenerateColumns="False"
                           CanUserSortColumns="False"

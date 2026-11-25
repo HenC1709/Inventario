@@ -22,6 +22,8 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddTiendaBodegasServices(this IServiceCollection services, string? dataDirectory = null)
     {
+        QuestPdfExportService.ConfigureLicenseOnce();
+
         services.AddSingleton(_ => new JsonDataContext(dataDirectory));
 
         services.AddSingleton<ISupplierRepository, SupplierRepository>();
@@ -33,6 +35,8 @@ public static class DependencyInjection
         services.AddSingleton<ICatalogService, CatalogManager>();
         services.AddSingleton<ISettingsService, SettingsManager>();
         services.AddSingleton<IInventoryExportService, InventoryCsvExporter>();
+        services.AddSingleton<IPdfExportService, QuestPdfExportService>();
+        services.AddSingleton<IPrinterService, WpfPrinterService>();
         services.AddSingleton<IDialogService, DialogService>();
 
         services.AddSingleton<DashboardViewModel>();

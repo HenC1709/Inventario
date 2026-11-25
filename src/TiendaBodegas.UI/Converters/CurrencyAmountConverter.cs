@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows.Data;
+using TiendaBodegas.Application.Services;
 
 namespace TiendaBodegas.UI.Converters;
 
@@ -8,27 +9,11 @@ namespace TiendaBodegas.UI.Converters;
 /// </summary>
 public sealed class CurrencyAmountConverter : IMultiValueConverter
 {
-    private static readonly CultureInfo NumberCulture = CultureInfo.GetCultureInfo("en-US");
-
     /// <summary>
     /// Formats a monetary amount according to the active ISO currency code (or symbol).
     /// </summary>
     public static string Format(decimal amount, string? currencyCodeOrSymbol, bool includeCodePrefix = true)
-    {
-        var token = (currencyCodeOrSymbol ?? "USD").Trim().ToUpperInvariant();
-
-        if (token is "EUR" or "€")
-            return "€" + amount.ToString("#,##0.00", NumberCulture);
-
-        if (token == "COP")
-        {
-            var hasFraction = amount != Math.Truncate(amount);
-            var numberText = amount.ToString(hasFraction ? "#,##0.00" : "#,##0", NumberCulture);
-            return includeCodePrefix ? $"COP ${numberText}" : $"${numberText}";
-        }
-
-        return "$" + amount.ToString("#,##0.00", NumberCulture);
-    }
+        => CurrencyFormatter.Format(amount, currencyCodeOrSymbol, includeCodePrefix);
 
     /// <summary>
     /// Formats <c>values[0]</c> (decimal amount) using <c>values[1]</c> (currency code or symbol).

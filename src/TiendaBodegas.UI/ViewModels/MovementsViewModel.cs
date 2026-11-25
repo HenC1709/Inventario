@@ -20,6 +20,7 @@ public partial class MovementsViewModel : ObservableObject
     private readonly ICatalogService _catalogService;
     private readonly IDialogService _dialogService;
     private readonly ISettingsService? _settingsService;
+    private readonly IPrinterService? _printerService;
     private bool _isUpdatingFilters;
 
     [ObservableProperty]
@@ -65,12 +66,14 @@ public partial class MovementsViewModel : ObservableObject
         IInventoryService inventoryService,
         ICatalogService catalogService,
         IDialogService dialogService,
-        ISettingsService? settingsService = null)
+        ISettingsService? settingsService = null,
+        IPrinterService? printerService = null)
     {
         _inventoryService = inventoryService;
         _catalogService = catalogService;
         _dialogService = dialogService;
         _settingsService = settingsService;
+        _printerService = printerService;
         _selectedMovementTypeFilter = MovementTypeFilters[0];
 
         if (_settingsService != null)
@@ -129,6 +132,36 @@ public partial class MovementsViewModel : ObservableObject
     public void RegisterExit()
     {
         OpenMovementForm(MovementType.Exit, "Salida de inventario registrada correctamente.");
+    }
+
+    /// <summary>
+    /// Opens the print dialog to print an 80 mm thermal receipt for the selected stock movement.
+    /// </summary>
+    [RelayCommand]
+    public void PrintMovementTicket(StockMovementDisplayDto? movement)
+    {
+        if (movement == null)
+            return;
+
+        ClearStatus();
+        if (_printerService == null)
+        {
+            SetErrorStatus("El servicio de impresión no está disponible.");
+            return;
+        }
+
+        try
+        {
+            var businessName = _settingsService?.GetSettings().BusinessName;
+            if (_printerService.PrintMovementTicket(movement, businessName, CurrencyCode))
+            {
+                SetSuccessStatus("Ticket 80 mm enviado a impresión correctamente.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorStatus($"No se pudo imprimir el ticket: {ex.Message}");
+        }
     }
 
     /// <summary>
