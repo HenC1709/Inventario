@@ -23,17 +23,25 @@ New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 
 $selfContainedFlag = if ($SelfContained) { "true" } else { "false" }
 
-Write-Host "Publicando StockFlow ($Configuration | $Runtime | SelfContained=$selfContainedFlag)..."
+Write-Host "Publicando StockFlow ($Configuration | $Runtime | SelfContained=$selfContainedFlag | SingleFile=true)..."
 dotnet publish $uiProject `
     -c $Configuration `
     -r $Runtime `
     --self-contained $selfContainedFlag `
-    -p:PublishSingleFile=false `
+    -p:PublishSingleFile=true `
+    -p:IncludeNativeLibrariesForSelfExtract=true `
+    -p:DebugType=none `
     -m:1 -nr:false `
     -o $publishDir
 
 if ($LASTEXITCODE -ne 0) {
     throw "La publicación de dotnet publish falló con código $LASTEXITCODE."
+}
+
+$publishedExe = Join-Path $publishDir "StockFlow.exe"
+$standaloneExe = Join-Path $releaseDir "StockFlow-$Version-$Runtime.exe"
+if (Test-Path $publishedExe) {
+    Copy-Item $publishedExe $standaloneExe -Force
 }
 
 if (Test-Path $zipPath) {
